@@ -1,0 +1,7 @@
+syntax = "proto3";
+package test5;
+
+message Item {
+    string name = 1;
+    map<string, int32> intMap = 2;
+}

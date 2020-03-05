@@ -1,0 +1,10 @@
+syntax = "proto3";
+package test7;
+
+message Item {
+    string name = 1;
+    oneof val {
+        string val1 = 2;
+        int32  val2 = 3;
+    }
+}

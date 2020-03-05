@@ -1,0 +1,18 @@
+syntax = "proto3";
+package test8;
+
+message Item {
+    message One {
+        string value1 = 1;
+        int32  num1   = 2;
+    }
+    message Two {
+        string value2 = 1;
+        int32  num2   = 2;
+    }
+    string name = 1;
+    oneof val {
+        One val1 = 2;
+        Two val2 = 3;
+    }
+}

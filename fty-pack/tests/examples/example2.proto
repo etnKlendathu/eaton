@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+package test;
+
+message Item {
+    string name = 1;
+}
+
+message Person2 {
+    string name  = 1;
+    repeated int32 items = 2;
+    int32 value = 3;
+
+    repeated Item more = 4;
+}

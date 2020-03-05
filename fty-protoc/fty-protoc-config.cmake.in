@@ -1,0 +1,18 @@
+@PACKAGE_INIT@
+
+if(EXISTS "${CMAKE_CURRENT_LIST_DIR}/CMakeFiles")
+    set(FTY_PROTOC_DIR     "@CMAKE_CURRENT_SOURCE_DIR@")
+    set(FTY_PROTOC_BIN_DIR "@RUNTIME_PREFIX@/bin")
+else()
+    set_and_check(FTY_PROTOC_DIR     "@PACKAGE_CMAKE_INSTALL_DIR@")
+    set_and_check(FTY_PROTOC_BIN_DIR "@BIN_INSTALL_DIR@")
+endif()
+
+# Append ourselfs to search path
+list(APPEND CMAKE_PREFIX_PATH "${FTY_PROTOC_DIR}/../")
+
+include(${FTY_PROTOC_DIR}/cmake/protogen.cmake)
+
+if (NOT PROTOC_FTY_FOUND)
+    set(FTY_CMAKE_FOUND ON CACHE INTERNAL "" FORCE)
+endif ()

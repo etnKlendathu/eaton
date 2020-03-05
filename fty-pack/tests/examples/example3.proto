@@ -1,0 +1,13 @@
+syntax = "proto3";
+package test3;
+
+message Item {
+    message SubItem {
+        bool exists = 1;
+        string name = 2;
+    }
+
+    string name = 1;
+    SubItem sub = 2;
+}
+

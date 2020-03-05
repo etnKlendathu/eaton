@@ -1,0 +1,12 @@
+syntax = "proto3";
+package test4;
+
+message Item {
+    enum EnumValue {
+        Value1 = 0;
+        Value2 = 1;
+        Value3 = 2;
+    }
+
+    EnumValue enval = 1;
+}

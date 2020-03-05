@@ -1,0 +1,9 @@
+syntax = "proto3";
+import "examples/example4.proto";
+package test6;
+
+message Item
+{
+    string name = 1;
+    test4.Item item = 2;
+}
