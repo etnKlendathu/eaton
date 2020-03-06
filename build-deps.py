@@ -14,8 +14,8 @@ INSTALL_PREFIX   = os.path.join(THIS_DIR, "runtime", BUILD_TYPE)
 
 # Order is matter :(
 DEPENDENCIES = [
-    #"catch2",
-    #"cxxtools",
+    "catch2",
+    "cxxtools",
     "czmq",
     "libcidr",
     "libsodium",
@@ -24,7 +24,15 @@ DEPENDENCIES = [
     "log4cplus",
     "malamute",
     "protobuf",
-    "yaml"
+    "yaml",
+    "tntdb",
+    "libmagic,"
+    "fty-common-logging",
+    "fty-common",
+    "fty-asset-activator",
+    "fty-common-db",
+    "fty-common-mlm",
+    "fty-proto"
 ]
 
 def buildCmake(depPath):
