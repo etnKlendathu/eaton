@@ -11,6 +11,7 @@ raven_target(interface ${PROJECT_NAME}
         utils/convert.h
         utils/split.h
         utils/traits.h
+        utils/expected.h
 )
 
 add_subdirectory(test)

@@ -7,6 +7,7 @@ raven_target(exe ${PROJECT_NAME}-test
         main.cpp
         split.cpp
         convert.cpp
+        expected.cpp
     USES
         ${PROJECT_NAME}
         Catch2::Catch2
