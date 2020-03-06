@@ -3,8 +3,8 @@ import os
 import subprocess
 
 THIS_DIR         = os.path.abspath(os.path.dirname(__file__))
-COMPILER_CC      = "clang-9"
-COMPILER_CXX     = "clang++-9"
+COMPILER_CC      = "clang-10"
+COMPILER_CXX     = "clang++-10"
 BUILD_GENERATOR  = "Ninja"
 BUILD_TYPE       = "Debug"
 
@@ -16,10 +16,10 @@ INSTALL_PREFIX   = os.path.join(THIS_DIR, "runtime", BUILD_TYPE)
 DEPENDENCIES = [
     "catch2",
     "cxxtools",
+    "libzmq",
     "czmq",
     "libcidr",
     "libsodium",
-    "libzmq",
     "cppzmq",
     "log4cplus",
     "malamute",
