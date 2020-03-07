@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 import os
 import subprocess
+import argparse
 
 THIS_DIR         = os.path.abspath(os.path.dirname(__file__))
 COMPILER_CC      = "clang-10"
@@ -32,7 +33,13 @@ DEPENDENCIES = [
     "fty-asset-activator",
     "fty-common-db",
     "fty-common-mlm",
-    "fty-proto"
+    "fty-proto",
+    "fty-common-socket",
+    "fty-common-messagebus",
+    "fty-common-dto",
+    "fty-lib-certificate",
+    "fty-security-wallet",
+    "fty-common-nut",
 ]
 
 def buildCmake(depPath):
@@ -52,9 +59,15 @@ def buildCmake(depPath):
     subprocess.run(["cmake", "--build", "."], env = envir, cwd=buildPath)
 
 
-def buildDependencies():
-    for dep in DEPENDENCIES:
+def buildDependencies(libs = {}):
+    for dep in libs if libs else DEPENDENCIES:
         buildCmake(os.path.join(DEPENDENCIES_DIR, dep))
 
 if __name__ == "__main__":
-    buildDependencies()
+    parser = argparse.ArgumentParser(description='Build libraries.')
+    parser.add_argument('lib', nargs='*', help='lib to build')
+    args = parser.parse_args()
+    if not args.lib:
+        buildDependencies()
+    else:
+        buildDependencies(args.lib)
