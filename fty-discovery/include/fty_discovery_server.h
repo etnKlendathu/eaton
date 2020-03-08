@@ -40,15 +40,32 @@ struct Config : public pack::Node
     {
         using pack::Node::Node;
 
-        pack::String     type               = FIELD("type");
-        pack::StringList scans              = FIELD("scans");
-        pack::StringList ips                = FIELD("ips");
-        pack::String     scanNumber         = FIELD("scanNumber");
-        pack::String     ipNumber           = FIELD("ipNumber");
-        pack::StringList documents          = FIELD("documents");
-        pack::StringMap  defaultValuesAux   = FIELD("defaultValuesAux");
-        pack::StringMap  defaultValuesExt   = FIELD("defaultValuesExt");
-        pack::StringMap  defaultValuesLinks = FIELD("defaultValuesLinks");
+        struct Link : public pack::Node
+        {
+            using pack::Node::Node;
+
+            pack::UInt32 src  = FIELD("src");
+            pack::UInt32 type = FIELD("dest");
+
+            META(Link, src, type)
+        };
+
+        enum class Type
+        {
+            localscan = 1,
+            multiscan = 2,
+            ipscan    = 3
+        };
+
+        pack::Enum<Type>       type               = FIELD("type");
+        pack::StringList       scans              = FIELD("scans");
+        pack::StringList       ips                = FIELD("ips");
+        pack::String           scanNumber         = FIELD("scanNumber");
+        pack::String           ipNumber           = FIELD("ipNumber");
+        pack::StringList       documents          = FIELD("documents");
+        pack::StringMap        defaultValuesAux   = FIELD("defaultValuesAux");
+        pack::StringMap        defaultValuesExt   = FIELD("defaultValuesExt");
+        pack::ObjectList<Link> defaultValuesLinks = FIELD("defaultValuesLinks");
 
         META(Discovery, type, scans, ips, scanNumber, ipNumber, documents, defaultValuesAux, defaultValuesExt,
             defaultValuesLinks)
@@ -82,13 +99,6 @@ struct Config : public pack::Node
 
 
 #define DEFAULT_DUMPDATA_LOOP "2"
-
-#define TYPE_LOCALSCAN       1
-#define TYPE_MULTISCAN       2
-#define TYPE_IPSCAN          3
-#define DISCOVERY_TYPE_LOCAL "localscan"
-#define DISCOVERY_TYPE_MULTI "multiscan"
-#define DISCOVERY_TYPE_IP    "ipscan"
 
 #define STATUS_STOPPED  1
 #define STATUS_FINISHED 2

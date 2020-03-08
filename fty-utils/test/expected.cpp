@@ -1,5 +1,6 @@
 #include "utils/expected.h"
 #include <catch2/catch.hpp>
+#include <iostream>
 
 struct St
 {
@@ -16,16 +17,21 @@ struct St
 
 TEST_CASE("Expected")
 {
+    SECTION("Expected")
     {
         auto it = Expected<int>(32);
         CHECK(it);
         CHECK(32 == *it);
     }
+
+    SECTION("Unexpected")
     {
         Expected<int> it = unexpected("wrong");
         CHECK(!it);
         CHECK("wrong" == it.error());
     }
+
+    SECTION("Return values")
     {
         auto func = []() -> Expected<St> {
             return St();
@@ -43,5 +49,17 @@ TEST_CASE("Expected")
         Expected<St> ust = func2();
         CHECK(!ust);
         CHECK("wrong" == ust.error());
+    }
+
+    SECTION("Return streamed unexpected")
+    {
+        auto func = []() -> Expected<St> {
+            return unexpected() << "wrong " << 42;
+        };
+
+        Expected<St> st = func();
+        CHECK(!st);
+        std::cerr << st.error() << std::endl;
+        CHECK("wrong 42" == st.error());
     }
 }

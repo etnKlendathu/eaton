@@ -34,7 +34,7 @@ public:
 public:
     /// Returns INode interface by index
     virtual const INode& get(int index) const = 0;
-    virtual INode& create() = 0;
+    virtual INode&       create()             = 0;
 };
 
 // ===========================================================================================================
@@ -85,6 +85,7 @@ public:
     template <typename Func>
     bool     remove(Func&& func);
     const T& operator[](int index) const;
+    bool     empty() const;
 
 public:
     int          size() const override;
@@ -94,8 +95,8 @@ public:
     void         set(Attribute&& other) override;
     bool         hasValue() const override;
     const INode& get(int index) const override;
-    INode& create() override;
-    void        clear() override;
+    INode&       create() override;
+    void         clear() override;
 
 private:
     ListType m_value;
@@ -107,7 +108,7 @@ template <Type ValType>
 class ValueList : public IValueList
 {
 public:
-    using CppType = typename ResolveType<ValType>::type;
+    using CppType                  = typename ResolveType<ValType>::type;
     static constexpr Type ThisType = ValType;
 
     using IValueList::IValueList;
@@ -127,10 +128,11 @@ public:
     void            append(const CppType& value);
     void            append(CppType&& value);
 
-    bool     find(const CppType& func);
-    bool     remove(const CppType& toRemove);
+    bool           find(const CppType& func);
+    bool           remove(const CppType& toRemove);
     const CppType& operator[](int index) const;
-    void     clear() override;
+    void           clear() override;
+    bool           empty() const;
 
 public:
     int         size() const override;
@@ -294,6 +296,12 @@ INode& ObjectList<T>::create()
     return append();
 }
 
+template <typename T>
+bool ObjectList<T>::empty() const
+{
+    return m_value.empty();
+}
+
 // ===========================================================================================================
 // Values list implementation
 // ===========================================================================================================
@@ -432,6 +440,12 @@ Type ValueList<ValType>::valueType() const
 {
     return ValType;
 };
+
+template <Type ValType>
+bool ValueList<ValType>::empty() const
+{
+    return m_value.empty();
+}
 
 // ===========================================================================================================
 

@@ -1,10 +1,18 @@
 #pragma once
 #include <string>
 #include <cassert>
+#include "convert.h"
 
 struct Unexpected
 {
     std::string message;
+
+    template<typename T>
+    Unexpected& operator<<(const T& val)
+    {
+        message += fty::convert<std::string>(val);
+        return *this;
+    }
 };
 
 template <typename T>
@@ -23,6 +31,12 @@ public:
 
     Expected(Unexpected&& unex)
         : m_error(std::move(unex.message))
+        , m_isError(true)
+    {
+    }
+
+    Expected(const Unexpected& unex)
+        : m_error(unex.message)
         , m_isError(true)
     {
     }
@@ -90,7 +104,7 @@ private:
     bool m_isError = false;
 };
 
-inline Unexpected unexpected(const std::string& error)
+inline Unexpected unexpected(const std::string& error = {})
 {
     return {error};
 }

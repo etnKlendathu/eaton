@@ -39,7 +39,7 @@
 
 Config& discoveryConfig()
 {
-    static Config cfg = [](){
+    static Config cfg = []() {
         Config item;
         pack::zconfig::deserialize(FTY_DISCOVERY_CFG_FILE, item);
         return item;
@@ -54,7 +54,7 @@ typedef struct _configuration_scan_t
 {
     std::vector<std::string> scan_list;
     int64_t                  scan_size;
-    uint8_t                  type;
+    Config::Discovery::Type  type;
 } configuration_scan_t;
 
 struct _fty_discovery_server_t
@@ -118,28 +118,26 @@ bool compute_ip_list(std::vector<std::string>* listIp)
     return true;
 }
 
-bool compute_scans_size(std::vector<std::string>* list_scan, int64_t* scan_size)
+Expected<int64_t> compute_scans_size(pack::StringList& list_scan)
 {
-    *scan_size = 0;
-    for (unsigned int iPosScan = 0; iPosScan < list_scan->size(); iPosScan++) {
-        std::string scan = list_scan->at(iPosScan);
-        int         pos  = int(scan.find("-"));
+    int64_t scan_size = 0;
+    for (std::string& scan: list_scan) {
+        size_t         pos  = scan.find("-");
 
         // if subnet
-        if (pos == -1) {
+        if (pos == std::string::npos) {
             CIDRAddress addrCIDR(scan);
 
             if (addrCIDR.prefix() != -1) {
                 log_debug("valid subnet %s", scan.c_str());
                 // all the subnet (1 << (32- prefix) ) minus subnet and broadcast address
                 if (addrCIDR.prefix() <= 30)
-                    (*scan_size) += ((1 << (32 - addrCIDR.prefix())) - 2);
+                    scan_size += ((1 << (32 - addrCIDR.prefix())) - 2);
                 else // 31/32 prefix special management
-                    (*scan_size) += (1 << (32 - addrCIDR.prefix()));
+                    scan_size += (1 << (32 - addrCIDR.prefix()));
             } else {
                 // not a valid range
-                log_error("Address subnet (%s) is not valid!", scan.c_str());
-                return false;
+                return unexpected() << "Address subnet (" << scan << ") is not valid!";
             }
         } // else : range
         else {
@@ -149,8 +147,7 @@ bool compute_scans_size(std::vector<std::string>* list_scan, int64_t* scan_size)
             CIDRAddress addrEnd(rangeEnd);
 
             if (!addrStart.valid() || !addrEnd.valid() || (addrStart > addrEnd)) {
-                log_error("(%s) is not a valid range!", scan.c_str());
-                return false;
+                return unexpected() << scan << " is not a valid range!";
             }
 
             size_t      posC        = rangeStart.find_last_of(".");
@@ -187,19 +184,19 @@ bool compute_scans_size(std::vector<std::string>* list_scan, int64_t* scan_size)
             size2 += atoi(startOfAddr.substr(posC + 1).c_str()) * 256 * 256 * 256;
             startOfAddr = startOfAddr.substr(0, posC);
 
-            (*scan_size) += (size2 - size1) + 1;
+            scan_size += (size2 - size1) + 1;
 
-            pos = int(rangeStart.find("/"));
-            if (pos != -1) {
+            pos = rangeStart.find("/");
+            if (pos != std::string::npos) {
                 rangeStart = rangeStart.substr(0, size_t(pos));
             }
 
-            pos = int(rangeEnd.find("/"));
-            if (pos != -1) {
+            pos = rangeEnd.find("/");
+            if (pos != std::string::npos) {
                 rangeEnd = rangeEnd.substr(0, size_t(pos));
             }
             std::string correct_range = rangeStart + "/0-" + rangeEnd + "/0";
-            list_scan->at(iPosScan)   = correct_range;
+            scan   = correct_range;
 
             log_debug("valid range (%s-%s). Size: %" PRIi64, rangeStart.c_str(), rangeEnd.c_str(),
                 (size2 - size1) + 1);
@@ -338,76 +335,65 @@ bool compute_configuration_file(fty_discovery_server_t* self)
     Config conf;
     pack::zconfig::deserialize(self->range_scan_config.config, conf);
 
-    std::string strType = conf.discovery.type;
-
-    self->default_values_aux.clear();
-    for(const auto& val: conf.discovery.defaultValuesAux) {
-        self->default_values_aux[val.first] = val.second;
-    }
-
-    self->default_values_ext.clear();
-    for(const auto& val: conf.discovery.defaultValuesExt) {
-        self->default_values_ext[val.first] = val.second;
-    }
+    self->default_values_aux = conf.discovery.defaultValuesAux.value();
+    self->default_values_ext = conf.discovery.defaultValuesExt.value();
 
     self->default_values_links.clear();
-    for(const auto& val: conf.discovery.defaultValuesLinks) {
+    for (const auto& val : conf.discovery.defaultValuesLinks) {
         link_t l;
-        l.src     = uint32_t(std::stoul(zconfig_get(link, "src", "0")));
+        l.src     = val.src;
         l.dest    = 0;
         l.src_out = nullptr;
         l.dest_in = nullptr;
-        l.type    = uint16_t(std::stoul(zconfig_get(link, "type", "1")));
+        l.type    = uint16_t(val.type);
 
         if (l.src > 0) {
             self->default_values_links.emplace_back(l);
         }
     }
 
-    if (list_scans.empty() && streq(strType, DISCOVERY_TYPE_MULTI)) {
+    bool valid = true;
+
+    if (conf.discovery.scans.empty() && conf.discovery.type == Config::Discovery::Type::multiscan) {
         valid = false;
         log_error(
             "error in config file %s : can't have rangescan without range", self->range_scan_config.config);
-    } else if (listIp.empty() && streq(strType, DISCOVERY_TYPE_IP)) {
+    } else if (conf.discovery.ips.empty() && conf.discovery.type == Config::Discovery::Type::ipscan) {
         valid = false;
         log_error(
             "error in config file %s : can't have ipscan without ip list", self->range_scan_config.config);
     } else {
         int64_t sizeTemp = 0;
-        if (streq(strType, DISCOVERY_TYPE_MULTI)) {
-            if (!compute_scans_size(&list_scans, &sizeTemp)) {
+        if (conf.discovery.type == Config::Discovery::Type::multiscan) {
+            if (!compute_scans_size(conf.discovery.scans, &sizeTemp)) {
                 valid = false;
                 log_error(
                     "Error in config file %s: error in range or subnet", self->range_scan_config.config);
             } else {
-                self->configuration_scan.type      = TYPE_MULTISCAN;
+                self->configuration_scan.type      = Config::Discovery::Type::multiscan;
                 self->configuration_scan.scan_size = sizeTemp;
-                self->configuration_scan.scan_list.clear();
-                self->configuration_scan.scan_list = list_scans;
+                self->configuration_scan.scan_list = conf.discovery.scans.value();
             }
-        } else if (streq(strType, DISCOVERY_TYPE_IP)) {
+        } else if (conf.discovery.type == Config::Discovery::Type::ipscan) {
             if (!compute_ip_list(&listIp)) {
                 valid = false;
                 log_error("Error in config file %s: error in ip list", self->range_scan_config.config);
             } else {
-                self->configuration_scan.type      = TYPE_IPSCAN;
+                self->configuration_scan.type      = Config::Discovery::Type::ipscan;
                 self->configuration_scan.scan_size = int64_t(listIp.size());
-                self->configuration_scan.scan_list.clear();
-                self->configuration_scan.scan_list = listIp;
+                self->configuration_scan.scan_list = conf.discovery.ips.value();
             }
-        } else if (streq(strType, DISCOVERY_TYPE_LOCAL)) {
-            self->configuration_scan.type = TYPE_LOCALSCAN;
+        } else if (conf.discovery.type == Config::Discovery::Type::localscan) {
+            self->configuration_scan.type = Config::Discovery::Type::localscan;
         } else {
             valid = false;
         }
     }
 
-    if (valid)
+    if (valid) {
         log_debug("config file %s applied successfully", self->range_scan_config.config);
+    }
 
-    list_scans.clear();
-    listIp.clear();
-    zconfig_destroy(&config);
     return valid;
 }
 
@@ -1164,4 +1150,3 @@ void fty_discovery_server_destroy(fty_discovery_server_t** self_p)
         *self_p = nullptr;
     }
 }
-
