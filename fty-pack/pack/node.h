@@ -74,6 +74,8 @@ public:
 
     const std::string& fileDescriptor() const override;
 
+    std::string protoName() const override;
+
     void clear() override;
 };
 

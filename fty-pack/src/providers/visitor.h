@@ -53,15 +53,45 @@ public:
             case Type::UInt64:
                 Worker::unpackValue(static_cast<ValueList<Type::UInt64>&>(list), res);
                 break;
-            default:
+            case Type::Unknown:
                 throw std::runtime_error("Unsupported type to unpack");
             }
         }
     }
 
     template<typename Resource>
-    static void visit(IMap& /*map*/, const Resource& /*res*/)
+    static void visit(IMap& map, const Resource& res)
     {
+        if (auto casted = dynamic_cast<IValueMap*>(&map)) {
+            switch (casted->valueType()) {
+            case Type::Bool:
+                Worker::unpackValue(static_cast<ValueMap<Type::Bool>&>(map), res);
+                break;
+            case Type::Double:
+                Worker::unpackValue(static_cast<ValueMap<Type::Double>&>(map), res);
+                break;
+            case Type::Float:
+                Worker::unpackValue(static_cast<ValueMap<Type::Float>&>(map), res);
+                break;
+            case Type::String:
+                Worker::unpackValue(static_cast<ValueMap<Type::String>&>(map), res);
+                break;
+            case Type::Int32:
+                Worker::unpackValue(static_cast<ValueMap<Type::Int32>&>(map), res);
+                break;
+            case Type::UInt32:
+                Worker::unpackValue(static_cast<ValueMap<Type::UInt32>&>(map), res);
+                break;
+            case Type::Int64:
+                Worker::unpackValue(static_cast<ValueMap<Type::Int64>&>(map), res);
+                break;
+            case Type::UInt64:
+                Worker::unpackValue(static_cast<ValueMap<Type::UInt64>&>(map), res);
+                break;
+            case Type::Unknown:
+                throw std::runtime_error("Unsupported type to unpack");
+            }
+        }
     }
 
     template<typename Resource>
@@ -92,7 +122,7 @@ public:
         case Type::UInt64:
             Worker::unpackValue(static_cast<UInt64&>(value), res);
             break;
-        default:
+        case Type::Unknown:
             throw std::runtime_error("Unsupported type to unpack");
         }
     }
@@ -170,15 +200,45 @@ public:
             case Type::UInt64:
                 Worker::packValue(static_cast<const ValueList<Type::UInt64>&>(list), res);
                 break;
-            default:
+            case Type::Unknown:
                 throw std::runtime_error("Unsupported type to unpack");
             }
         }
     }
 
     template<typename Resource>
-    static void visit(const IMap& /*map*/, Resource& /*res*/)
+    static void visit(const IMap& map, Resource& res)
     {
+        if (auto casted = dynamic_cast<const IValueMap*>(&map)) {
+            switch (casted->valueType()) {
+            case Type::Bool:
+                Worker::packValue(static_cast<const ValueMap<Type::Bool>&>(map), res);
+                break;
+            case Type::Double:
+                Worker::packValue(static_cast<const ValueMap<Type::Double>&>(map), res);
+                break;
+            case Type::Float:
+                Worker::packValue(static_cast<const ValueMap<Type::Float>&>(map), res);
+                break;
+            case Type::String:
+                Worker::packValue(static_cast<const ValueMap<Type::String>&>(map), res);
+                break;
+            case Type::Int32:
+                Worker::packValue(static_cast<const ValueMap<Type::Int32>&>(map), res);
+                break;
+            case Type::UInt32:
+                Worker::packValue(static_cast<const ValueMap<Type::UInt32>&>(map), res);
+                break;
+            case Type::Int64:
+                Worker::packValue(static_cast<const ValueMap<Type::Int64>&>(map), res);
+                break;
+            case Type::UInt64:
+                Worker::packValue(static_cast<const ValueMap<Type::UInt64>&>(map), res);
+                break;
+            case Type::Unknown:
+                throw std::runtime_error("Unsupported type to unpack");
+            }
+        }
     }
 
     template<typename Resource>
@@ -209,7 +269,7 @@ public:
         case Type::UInt64:
             Worker::packValue(static_cast<const UInt64&>(value), res);
             break;
-        default:
+        case Type::Unknown:
             throw std::runtime_error("Unsupported type to unpack");
         }
     }

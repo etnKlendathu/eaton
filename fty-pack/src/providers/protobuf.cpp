@@ -64,6 +64,9 @@ struct Convert
         }
     }
 
+    static void decode(ValueMap<ValType>& /*node*/, const ConstWalkType& /*proto*/)
+    {}
+
     static void encode(const Value<ValType>& node, WalkType& proto)
     {
         auto refl = std::get<0>(proto)->GetReflection();
@@ -120,6 +123,10 @@ struct Convert
                 setFunc(it);
             }
         }
+    }
+
+    static void encode(const ValueMap<ValType>& /*node*/, WalkType& /*proto*/)
+    {
     }
 };
 

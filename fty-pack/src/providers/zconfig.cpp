@@ -19,11 +19,15 @@ struct Convert
 
     static void decode(ValueList<ValType>& node, zconfig_t* zconf)
     {
-        if (auto first = zconfig_child(zconf)) {
-            node.append(fty::convert<CppType>(zconfig_value(first)));
-            while((first = zconfig_next(first)) != nullptr) {
-                node.append(fty::convert<CppType>(zconfig_value(first)));
-            }
+        for (zconfig_t* item = zconfig_child(zconf); item; item = zconfig_next(item)) {
+            node.append(fty::convert<CppType>(zconfig_value(item)));
+        }
+    }
+
+    static void decode(ValueMap<ValType>& node, zconfig_t* zconf)
+    {
+        for (zconfig_t* item = zconfig_child(zconf); item; item = zconfig_next(item)) {
+            node.append(fty::convert<std::string>(zconfig_name(item)), fty::convert<CppType>(zconfig_value(item)));
         }
     }
 
@@ -45,6 +49,14 @@ struct Convert
                 auto child = zconfig_new(fty::convert<std::string>(i++).c_str(), zconf);
                 zconfig_set_value(child, "%s", fty::convert<std::string>(it).c_str());
             }
+        }
+    }
+
+    static void encode(const ValueMap<ValType>& node, zconfig_t* zconf)
+    {
+        for (const auto& it : node) {
+            auto child = zconfig_new(fty::convert<std::string>(it.first).c_str(), zconf);
+            zconfig_set_value(child, "%s", fty::convert<std::string>(it.second).c_str());
         }
     }
 };

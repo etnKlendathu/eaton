@@ -90,6 +90,11 @@ const std::string& pack::Node::fileDescriptor() const
     return desc;
 }
 
+std::string pack::Node::protoName() const
+{
+    return typeName();
+}
+
 void pack::Node::clear()
 {
     for (auto& it : fields()) {

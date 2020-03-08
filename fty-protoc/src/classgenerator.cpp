@@ -27,7 +27,7 @@ void ClassGenerator::generateHeader(Formatter& frm, const std::string& descNames
         frm << "public:\n";
         frm.indent();
         for (int i = 0; i < m_desc->nested_type_count(); ++i) {
-            const auto& type = m_desc->nested_type(i);
+            const auto&    type = m_desc->nested_type(i);
             ClassGenerator nested(type);
             nested.generateHeader(frm, descNamespace);
         }
@@ -41,7 +41,7 @@ void ClassGenerator::generateHeader(Formatter& frm, const std::string& descNames
             frm << "enum class " << type->name() << "\n";
             frm << "{\n";
             frm.indent();
-            for(int j = 0; j < type->value_count(); ++j) {
+            for (int j = 0; j < type->value_count(); ++j) {
                 const auto& val = type->value(j);
                 frm << val->name() << " = " << val->number() << ",\n";
             }
@@ -55,8 +55,7 @@ void ClassGenerator::generateHeader(Formatter& frm, const std::string& descNames
 
     for (int i = 0; i < m_desc->field_count(); ++i) {
         const auto& fld = m_desc->field(i);
-        frm << cppType(fld) << " " << fld->camelcase_name() << " = FIELD(\"" << fld->name() << "\", "
-            << fld->number() << ")"
+        frm << cppType(fld) << " " << fld->camelcase_name() << " = FIELD(\"" << fld->name() << "\")"
             << ";\n";
     }
 
@@ -79,9 +78,10 @@ void ClassGenerator::generateHeader(Formatter& frm, const std::string& descNames
         frm << "if (!m_silent) {\n";
         frm.indent();
         frm << "m_silent = true;\n";
-        for(int i = 0; i < m_desc->oneof_decl_count(); ++i) {
+        for (int i = 0; i < m_desc->oneof_decl_count(); ++i) {
             const auto& oneof = m_desc->oneof_decl(i);
-            frm << "if (auto it = std::find(m_" << oneof->name() << ".begin(), m_" << oneof->name() << ".end(), &attr); it != m_" << oneof->name() << ".end()) {\n";
+            frm << "if (auto it = std::find(m_" << oneof->name() << ".begin(), m_" << oneof->name()
+                << ".end(), &attr); it != m_" << oneof->name() << ".end()) {\n";
             frm.indent();
             frm << "for(auto& val: m_" << oneof->name() << ") {\n";
             frm.indent();
@@ -126,11 +126,11 @@ void ClassGenerator::generateHeader(Formatter& frm, const std::string& descNames
     if (m_desc->oneof_decl_count()) {
         frm << "private:\n";
         frm.indent();
-        for(int i = 0; i < m_desc->oneof_decl_count(); ++i) {
+        for (int i = 0; i < m_desc->oneof_decl_count(); ++i) {
             const auto& oneof = m_desc->oneof_decl(i);
             frm << "std::vector<Attribute*> m_" << oneof->name() << " = {";
             bool first = true;
-            for(int i = 0; i < oneof->field_count(); ++i) {
+            for (int i = 0; i < oneof->field_count(); ++i) {
                 frm << (!first ? ", " : "") << "&" << oneof->field(i)->name();
                 first = false;
             }
@@ -167,8 +167,8 @@ std::string ClassGenerator::cppType(const FieldDescriptor* fld) const
         case FieldDescriptor::CPPTYPE_ENUM:
             return "pack::Enum<" + std::string(fld->enum_type()->name()) + ">";
         case FieldDescriptor::CPPTYPE_MESSAGE: {
-            std::string name = fld->message_type()->full_name();
-            std::string::size_type n = 0;
+            std::string            name = fld->message_type()->full_name();
+            std::string::size_type n    = 0;
             while ((n = name.find(".", n)) != std::string::npos) {
                 name.replace(n, 1, "::");
                 ++n;

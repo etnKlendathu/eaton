@@ -25,6 +25,13 @@ struct Convert
         }
     }
 
+    static void decode(ValueMap<ValType>& node, const YAML::Node& yaml)
+    {
+        for (const auto& it : yaml) {
+            node.append(it.first.as<std::string>(), it.second.as<CppType>());
+        }
+    }
+
     static void encode(const Value<ValType>& node, YAML::Node& yaml)
     {
         yaml = YAML::convert<CppType>::encode(node.value());
@@ -40,6 +47,13 @@ struct Convert
             for (const auto& it : node) {
                 yaml.push_back(YAML::convert<CppType>::encode(it));
             }
+        }
+    }
+
+    static void encode(const ValueMap<ValType>& node, YAML::Node& yaml)
+    {
+        for (const auto& it : node) {
+            yaml[it.first] = YAML::convert<CppType>::encode(it.second);
         }
     }
 };
