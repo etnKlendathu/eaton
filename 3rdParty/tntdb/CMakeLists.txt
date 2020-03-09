@@ -11,6 +11,8 @@ ExternalProject_Add(tntdb
                         CXX=${CMAKE_CXX_COMPILER}
                         CC=${CMAKE_C_COMPILER}
                         PKG_CONFIG_PATH=$ENV{PKG_CONFIG_PATH}
+                        CXXFLAGS=-I$ENV{PKG_CONFIG_PATH}/../../include
+                        LDFLAGS=-L$ENV{PKG_CONFIG_PATH}/../
                         --prefix=${CMAKE_INSTALL_PREFIX}
     BUILD_COMMAND     cd ${CMAKE_CURRENT_BINARY_DIR}/src/tntdb/ && make -j 5
     INSTALL_COMMAND   cd ${CMAKE_CURRENT_BINARY_DIR}/src/tntdb/ && make install
