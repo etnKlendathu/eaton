@@ -4,8 +4,8 @@ import subprocess
 import argparse
 
 THIS_DIR         = os.path.abspath(os.path.dirname(__file__))
-COMPILER_CC      = "clang-10"
-COMPILER_CXX     = "clang++-10"
+COMPILER_CC      = "clang-9"
+COMPILER_CXX     = "clang++-9"
 BUILD_GENERATOR  = "Ninja"
 BUILD_TYPE       = "Debug"
 
