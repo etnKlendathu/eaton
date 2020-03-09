@@ -3,7 +3,7 @@ include(ExternalProject)
 
 ExternalProject_Add(fty-security-wallet
     GIT_REPOSITORY    https://github.com/42ity/fty-security-wallet.git
-    GIT_TAG           "clang"
+    GIT_TAG           "master"
     SOURCE_DIR        ${CMAKE_CURRENT_BINARY_DIR}/src
     CONFIGURE_COMMAND ${CMAKE_CURRENT_BINARY_DIR}/src/autogen.sh &&
                       ${CMAKE_CURRENT_BINARY_DIR}/src/configure 

@@ -36,7 +36,6 @@
 #include <cxxtools/allocator.h>
 #include <tntdb.h>
 #include <fty_common.h>
-#include <fty_log.h>
 #include <ftyproto.h>
 #include <fty_common_db.h>
 #include <fty_security_wallet.h>

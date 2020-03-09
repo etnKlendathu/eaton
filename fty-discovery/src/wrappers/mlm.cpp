@@ -1,6 +1,7 @@
 #include "mlm.h"
 #include <malamute.h>
 #include <mlm_client.h>
+#include "zmessage.h"
 
 // ===========================================================================================================
 
@@ -44,6 +45,19 @@ Expected<int> Mlm::sendto(const std::string& address, const std::string& subject
     }
     return unexpected("Failed to send " + subject + " message to asset-agent");
 }
+
+Expected<int> Mlm::sendto(const std::string& address, const std::string& subject, const std::string& tracker,
+    uint32_t timeout, ZMessage&& content)
+{
+    zmsg_t* msg = content.take();
+    int res = mlm_client_sendto(
+        m_impl->m_client.get(), address.c_str(), subject.c_str(), tracker.c_str(), timeout, &msg);
+    if (res != -1) {
+        return res;
+    }
+    return unexpected("Failed to send " + subject + " message to asset-agent");
+}
+
 
 Expected<zmsg_t*> Mlm::recv()
 {

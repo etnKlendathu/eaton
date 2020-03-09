@@ -122,7 +122,7 @@ range_scan_actor (zsock_t *pipe, void *args)
         params = (range_scan_args_t *) zlist_first(argv);
         params2 = (discovered_devices_t *) zlist_next(argv);
         mappings = (const fty::nut::KeyValues *) zlist_next(argv);
-        if (! params || (params->ranges.size() < 1) || !params->config || !params2) {
+        if (! params || (params->ranges.size() < 1) || !params->config.empty() || !params2) {
             log_error ("Scanning range not defined!");
             zstr_send (pipe, REQ_DONE);
             zlist_destroy(&argv);
@@ -132,13 +132,13 @@ range_scan_actor (zsock_t *pipe, void *args)
         for(auto range: params->ranges) {
             CIDRAddress addrcheck (range.first);
             if (!addrcheck.valid ()) {
-                log_error ("Address range (%s) is not valid!", range.first);
+                log_error ("Address range (%s) is not valid!", range.first.c_str());
                 zstr_send (pipe, REQ_DONE);
                 zlist_destroy(&argv);
                 return;
             }
             if (addrcheck.protocol () != 4) {
-                log_error ("Scanning is not supported for such range (%s)!", range.first);
+                log_error ("Scanning is not supported for such range (%s)!", range.first.c_str());
                 zstr_send (pipe, REQ_DONE);
                 zlist_destroy(&argv);
                 return;
@@ -152,7 +152,7 @@ range_scan_actor (zsock_t *pipe, void *args)
         CIDRAddress addr;
         CIDRAddress addrDest;
 
-        if(!range.second) {
+        if(!range.second.empty()) {
             CIDRAddress addr_network(range.first);
             list->add(addr_network.network());
         }
@@ -163,8 +163,6 @@ range_scan_actor (zsock_t *pipe, void *args)
            addrDest = CIDRAddress(range.second);
            list->add(addrDest.host());
         }
-        zstr_free(&(range.first));
-        zstr_free(&(range.second));
         zlist_append(listScans, list);
     }
 

@@ -21,38 +21,34 @@
 
 #ifndef RANGE_SCAN_H_INCLUDED
 #define RANGE_SCAN_H_INCLUDED
+#include <string>
+#include <vector>
+
+struct range_scan_args_t
+{
+    std::vector<std::pair<std::string, std::string>> ranges;
+    std::string                                      config;
+};
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-typedef struct _range_scan_args_t {
-    std::vector<std::pair<char*, char*>> ranges;
-    char *config;
-} range_scan_args_t;
 
-//  @interface
 //  Create a new range_scan
-FTY_DISCOVERY_PRIVATE range_scan_t *
-    range_scan_new (const char* range);
+range_scan_t* range_scan_new(const char* range);
 
-//  Destroy the range_scan
-FTY_DISCOVERY_PRIVATE void
-    range_scan_destroy (range_scan_t **self_p);
+//   the range_scan
+FTY_DISCOVERY_PRIVATE void range_scan_destroy(range_scan_t** self_p);
 
 //  report progress in % (0 - 100);
-FTY_DISCOVERY_PRIVATE int
-    range_scan_progress (range_scan_t *self);
+int range_scan_progress(range_scan_t* self);
 
 //  Actor for range scan
-FTY_DISCOVERY_PRIVATE void
-    range_scan_actor (zsock_t *pipe, void *args);
+void range_scan_actor(zsock_t* pipe, void* args);
 
 //  Self test of this class
-FTY_DISCOVERY_PRIVATE void
-    range_scan_test (bool verbose);
-
-//  @end
+void range_scan_test(bool verbose);
 
 #ifdef __cplusplus
 }

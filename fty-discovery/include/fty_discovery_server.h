@@ -93,10 +93,6 @@ struct Config : public pack::Node
 };
 
 
-#define CFG_DISCOVERY_DEFAULT_VALUES_AUX   "/defaultValuesAux"
-#define CFG_DISCOVERY_DEFAULT_VALUES_EXT   "/defaultValuesExt"
-#define CFG_DISCOVERY_DEFAULT_VALUES_LINKS "/defaultValuesLinks"
-
 
 #define DEFAULT_DUMPDATA_LOOP "2"
 

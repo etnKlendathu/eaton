@@ -8,6 +8,8 @@ using zmsg_t = _zmsg_t;
 struct _zsock_t;
 using zsock_t = _zsock_t;
 
+class ZMessage;
+
 class Mlm
 {
 public:
@@ -16,6 +18,8 @@ public:
     bool          connect(const std::string& endpoint, uint32_t timeout, const std::string& address);
     Expected<int> sendto(const std::string& address, const std::string& subject, const std::string& tracker,
         uint32_t timeout, zmsg_t** content);
+    Expected<int> sendto(const std::string& address, const std::string& subject, const std::string& tracker,
+        uint32_t timeout, ZMessage&& content);
     Expected<zmsg_t*> recv();
     Expected<int>     setConsumer(const std::string& stream, const std::string& pattern);
     std::string       sender();

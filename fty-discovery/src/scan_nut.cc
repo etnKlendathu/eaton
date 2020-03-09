@@ -254,12 +254,7 @@ dump_data_actor(zsock_t *pipe, void *args) {
         loop_nb = std::stoi(DEFAULT_DUMPDATA_LOOP);
     }
 
-    int loop_iter_time = std::stoi(DEFAULT_DUMPDATA_LOOPTIME);
-    zconfig_t *config = zconfig_load(getDiscoveryConfigFile().c_str());
-    if (config) {
-        loop_iter_time = std::stoi(zconfig_get(config, CFG_PARAM_DUMPDATA_LOOPTIME, DEFAULT_DUMPDATA_LOOPTIME));
-        zconfig_destroy(&config);
-    }
+    int loop_iter_time = discoveryConfig().parameters.dumpDataLoopTime;
 
     zmsg_t *reply;
     if (!argv || zlist_size(argv) != 3) {
@@ -344,14 +339,7 @@ create_pool_dumpdata(const ScanResult &result, discovered_devices_t *devices, zs
     std::vector<zactor_t *> listActor;
     zpoller_t *poller = zpoller_new(pipe, NULL);
 
-    zconfig_t *config = zconfig_load(getDiscoveryConfigFile().c_str());
-    if (!config) {
-        log_error("failed to load config file %s", getDiscoveryConfigFile().c_str());
-        config = zconfig_new("root", NULL);
-    }
-
-    char* strNbPool = zconfig_get(config, CFG_PARAM_MAX_DUMPPOOL_NUMBER, DEFAULT_MAX_DUMPPOOL_NUMBER);
-    const size_t number_max_pool = std::stoi(strNbPool);
+    const size_t number_max_pool = discoveryConfig().parameters.maxDumpPoolNumber;
 
     s_nut_output_to_messages(listDiscovered, result.deviceConfigurations, devices);
     size_t number_asset_view = 0;
@@ -455,7 +443,6 @@ create_pool_dumpdata(const ScanResult &result, discovered_devices_t *devices, zs
     }
 
     zpoller_destroy(&poller);
-    zconfig_destroy(&config);
     return stop_now;
 }
 
@@ -531,16 +518,7 @@ scan_nut_actor(zsock_t *pipe, void *args)
     }
 
     // Grab timeout.
-    int timeout;
-    {
-        std::string strTimeout = DEFAULT_NUTSCAN_TIMEOUT;
-        zconfig_t *config = zconfig_load(getDiscoveryConfigFile().c_str());
-        if (config) {
-            strTimeout = zconfig_get(config, CFG_PARAM_NUTSCAN_TIMEOUT, DEFAULT_NUTSCAN_TIMEOUT);
-            zconfig_destroy(&config);
-        }
-        timeout = std::stoi(strTimeout);
-    }
+    int timeout = discoveryConfig().parameters.nutScannerTimeOut;
 
     /**
      * Scan the network and store credential/protocol pairs which returned data.

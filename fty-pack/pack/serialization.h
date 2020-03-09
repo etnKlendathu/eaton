@@ -18,6 +18,14 @@ namespace yaml {
 namespace zconfig {
     std::string serialize(const INode& node);
     void        deserialize(const std::string& content, INode& node);
+
+    template <typename T>
+    T deserialize(const std::string& content)
+    {
+        T node;
+        deserialize(content, node);
+        return node;
+    }
 } // namespace zconfig
 
 namespace protobuf {

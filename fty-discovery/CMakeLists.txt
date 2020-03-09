@@ -24,24 +24,24 @@ raven_target(exe ${PROJECT_NAME}
         src/device_scan.cc
         src/fty_discovery.cc
         src/fty_discovery_classes.h
-        src/fty_discovery_selftest.cc
         src/range_scan.h  scan_dns.h
         src/scan_nut.h
         src/assets.h
         src/cidr.h
         src/device_scan.h
-        src/fty_discovery_private_selftest.cc
         src/fty_discovery_server.cc
         src/range_scan.cc
         src/scan_dns.cc
         src/scan_nut.cc
         src/wrappers/mlm.cpp
         src/wrappers/mlm.h
+        src/wrappers/zmessage.h
     USES
         fty-utils
+        fty-common-logging
         pack
         libcidr
         libmlm
-        fty-common-log
-        fty-proto
+        libfty_proto
+        libfty_common_db
 )
