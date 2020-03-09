@@ -56,8 +56,7 @@ def buildCmake(depPath):
         "-DCMAKE_BUILD_TYPE="+BUILD_TYPE,
         "../.."], cwd=buildPath, env = envir)
 
-    subprocess.run(["cmake", "--build", "."], env = envir, cwd=buildPath)
-
+    subprocess.run(["cmake", "--build", "."], env = envir, cwd=buildPath).check_returncode()
 
 def buildDependencies(libs = {}):
     for dep in libs if libs else DEPENDENCIES:
