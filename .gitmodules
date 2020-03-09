@@ -1,0 +1,3 @@
+[submodule "raven-cmake"]
+	path = raven-cmake
+	url = https://github.com/zjes/raven-cmake.git
