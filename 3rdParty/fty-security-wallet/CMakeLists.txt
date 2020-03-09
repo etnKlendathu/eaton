@@ -3,7 +3,7 @@ include(ExternalProject)
 
 ExternalProject_Add(fty-security-wallet
     GIT_REPOSITORY    https://github.com/42ity/fty-security-wallet.git
-    GIT_TAG           "master"
+    GIT_TAG           "clang"
     SOURCE_DIR        ${CMAKE_CURRENT_BINARY_DIR}/src
     CONFIGURE_COMMAND ${CMAKE_CURRENT_BINARY_DIR}/src/autogen.sh &&
                       ${CMAKE_CURRENT_BINARY_DIR}/src/configure 
@@ -12,5 +12,6 @@ ExternalProject_Add(fty-security-wallet
                         PKG_CONFIG_PATH=$ENV{PKG_CONFIG_PATH}
                         --prefix=${CMAKE_INSTALL_PREFIX}
     BUILD_COMMAND     make -j 5
+    INSTALL_COMMAND   make install -j 5
     BUILD_IN_SOURCE   1
 )
