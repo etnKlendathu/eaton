@@ -27,66 +27,51 @@
 */
 
 #include "fty_discovery_classes.h"
+#include <utils/command-line.h>
 
 
 int main (int argc, char *argv [])
 {
-    bool verbose = false;
-    bool agent = false;
-    const char *range = NULL;
-    const char *config = FTY_DISCOVERY_CFG_FILE;
-    ManageFtyLog::setInstanceFtylog(FTY_DISCOVERY_ACTOR_NAME);
+    bool        verbose = false;
+    bool        agent   = false;
+    bool        help    = false;
+    std::string range;
+    std::string config = FTY_DISCOVERY_CFG_FILE;
 
-    int argn;
-    for (argn = 1; argn < argc; argn++) {
-        if (streq (argv [argn], "--help")
-        ||  streq (argv [argn], "-h")) {
-            puts ("fty-discovery [options] ...");
-            puts ("  --verbose / -v         verbose output");
-            puts ("  --help / -h            this information");
-            puts ("  --agent / -a           stay running, listen to rest api commands");
-            puts ("  --range / -r           scan this range (192.168.1.0/24 format). If -a and -r are not");
-            puts ("                         present, scan of attached networks is performed (localscan)");
-            printf("  --config / -c         agent config file [%s]\n",FTY_DISCOVERY_CFG_FILE);
-            return 0;
+    // clang-format off
+    fty::CommandLine cmd(
+        "Agent performing device discovery in network",
+        {
+            {"--verbose|-v", verbose, "verbose output"},
+            {"--agent|-a",   agent,   "stay running, listen to rest api commands"},
+            {"--config|-c",  config,  "agent config file"},
+            {"--range|-r",   range,   "scan this range (192.168.1.0/24 format). If -a and -r are not"
+                                      "present, scan of attached networks is performed (localscan)"},
+            {"--help|-h",    help,    "display this help"}
         }
-        else if (streq (argv [argn], "--verbose") ||  streq (argv [argn], "-v")) {
-            verbose = true;
-        }
-        else if (streq (argv [argn], "--agent") ||  streq (argv [argn], "-a")) {
-            agent = true;
-        }
-        else if (streq (argv [argn], "--range") ||  streq (argv [argn], "-r")) {
-            ++argn;
-            if (argn < argc) {
-                range = argv [argn];
-            }
-        }
-        else if (streq (argv [argn], "--config") ||  streq (argv [argn], "-c")) {
-            ++argn;
-            if (argn < argc) {
-                config = argv [argn];
-            }
-        }
-        else {
-            printf ("Unknown option: %s\n", argv [argn]);
-            return 1;
-        }
-    }
-    std::string logConfigFile;
-    zconfig_t *zconf = zconfig_load (config);
-    if (zconf) {
-        logConfigFile = std::string(zconfig_get(zconf, "log/config", "/etc/fty/ftylog.cfg"));
-        if (!logConfigFile.empty()) {
-            ManageFtyLog::getInstanceFtylog()->setConfigFile(logConfigFile);
-        }
-        else
-            log_error ("configuration not loaded %s", logConfigFile.c_str());
-        zconfig_destroy(&zconf);
+    );
+    // clang-format on
+
+    try {
+        cmd.parse(argc, argv);
+    } catch (const std::exception& ex) {
+        std::cerr << ex.what() << std::endl;
+        std::cout << cmd.help() << std::endl;
+        return 1;
     }
 
-    if (verbose)
+    if (help) {
+        std::cout << cmd.help() << std::endl;
+        return 0;
+    }
+
+    Config conf = pack::zconfig::deserializeFile<Config>(config);
+
+    ManageFtyLog::getInstanceFtylog()->setConfigFile(conf.log.config);
+
+    if (verbose) {
         ManageFtyLog::getInstanceFtylog()->setVeboseMode();
+    }
 
     zsys_init ();
     DBConn::dbpath();

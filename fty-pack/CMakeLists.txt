@@ -32,6 +32,7 @@ raven_target(shared ${PROJECT_NAME}
         src/providers/yaml.cpp
         src/providers/zconfig.cpp
         src/providers/protobuf.cpp
+        src/providers/serialization.cpp
     USES
         fty-utils
         yaml-cpp

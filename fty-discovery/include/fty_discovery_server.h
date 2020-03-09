@@ -85,13 +85,22 @@ struct Config : public pack::Node
             dumpDataLoopTime)
     };
 
+    struct Log : public pack::Node
+    {
+        using pack::Node::Node;
+
+        pack::String config = FIELD("config", "/etc/fty/ftylog.cfg");
+
+        META(Log, config)
+    };
+
     Server     server     = FIELD("server");
     Discovery  discovery  = FIELD("discovery");
     Parameters parameters = FIELD("parameters");
+    Log        log        = FIELD("log");
 
-    META(Config, server, discovery)
+    META(Config, server, discovery, parameters, log)
 };
-
 
 
 #define DEFAULT_DUMPDATA_LOOP "2"
