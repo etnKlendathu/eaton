@@ -27,7 +27,7 @@ DEPENDENCIES = [
     "protobuf",
     "yaml",
     "tntdb",
-    "libmagic,"
+    "libmagic",
     "fty-common-logging",
     "fty-common",
     "fty-asset-activator",
