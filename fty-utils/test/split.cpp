@@ -1,4 +1,4 @@
-#include "utils/split.h"
+#include "fty/split.h"
 #include <catch2/catch.hpp>
 
 
@@ -8,6 +8,7 @@ TEST_CASE("Split utils")
     {
         auto vec = fty::split("It's dead, that's what's wrong with it.", " ");
         CHECK(std::vector<std::string>{"It's", "dead,", "that's", "what's", "wrong", "with", "it."} == vec);
+        CHECK(fty::split("", ";").empty());
     }
 
     SECTION("Vector, skip empty")
@@ -36,6 +37,7 @@ TEST_CASE("Split utils")
         static std::regex re(",+");
         auto              vec = fty::split("this,,is,,,,an,,,ex-parrot", re, fty::SplitOption::KeepEmpty);
         CHECK(std::vector<std::string>{"this", "is", "an", "ex-parrot"} == vec);
+        CHECK(fty::split("", re).empty());
     }
 
     SECTION("Tuple")
@@ -51,6 +53,10 @@ TEST_CASE("Split utils")
 
         auto tuple3 = fty::split<std::string, int>("sense of life = 42 = 66", "=");
         CHECK(std::make_tuple("sense of life", 42) == tuple3);
+
+        auto [name1, val1] = fty::split<std::string, int>("", ";");
+        CHECK(name1.empty());
+        CHECK(0 == val1);
     }
 
     SECTION("Tuple, regex")

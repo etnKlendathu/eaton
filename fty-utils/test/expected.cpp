@@ -1,4 +1,4 @@
-#include "utils/expected.h"
+#include "fty/expected.h"
 #include <catch2/catch.hpp>
 #include <iostream>
 
@@ -19,45 +19,45 @@ TEST_CASE("Expected")
 {
     SECTION("Expected")
     {
-        auto it = Expected<int>(32);
+        auto it = fty::Expected<int>(32);
         CHECK(it);
         CHECK(32 == *it);
     }
 
     SECTION("Unexpected")
     {
-        Expected<int> it = unexpected("wrong");
+        fty::Expected<int> it = fty::unexpected("wrong");
         CHECK(!it);
         CHECK("wrong" == it.error());
     }
 
     SECTION("Return values")
     {
-        auto func = []() -> Expected<St> {
+        auto func = []() -> fty::Expected<St> {
             return St();
         };
 
-        auto func2 = []() -> Expected<St> {
-            return unexpected("wrong");
+        auto func2 = []() -> fty::Expected<St> {
+            return fty::unexpected("wrong");
         };
 
-        Expected<St> st = func();
+        fty::Expected<St> st = func();
         CHECK(st);
         CHECK(st->func());
         CHECK((*st).func());
 
-        Expected<St> ust = func2();
+        fty::Expected<St> ust = func2();
         CHECK(!ust);
         CHECK("wrong" == ust.error());
     }
 
     SECTION("Return streamed unexpected")
     {
-        auto func = []() -> Expected<St> {
-            return unexpected() << "wrong " << 42;
+        auto func = []() -> fty::Expected<St> {
+            return fty::unexpected() << "wrong " << 42;
         };
 
-        Expected<St> st = func();
+        fty::Expected<St> st = func();
         CHECK(!st);
         std::cerr << st.error() << std::endl;
         CHECK("wrong 42" == st.error());

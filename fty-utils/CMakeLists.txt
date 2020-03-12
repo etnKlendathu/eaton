@@ -11,11 +11,11 @@ project(fty-utils VERSION 1.0.0)
 
 raven_target(interface ${PROJECT_NAME}
     PUBLIC
-        utils/command-line.h
-        utils/convert.h
-        utils/split.h
-        utils/traits.h
-        utils/expected.h
+        fty/command-line.h
+        fty/convert.h
+        fty/split.h
+        fty/traits.h
+        fty/expected.h
 )
 
 ##############################################################################################################

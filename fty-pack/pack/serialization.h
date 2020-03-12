@@ -1,12 +1,12 @@
 #pragma once
 #include <string>
-#include <utils/expected.h>
+#include <fty/expected.h>
 
 namespace pack {
 
 class INode;
 
-Expected<std::string> read(const std::string& filename);
+fty::Expected<std::string> read(const std::string& filename);
 
 namespace json {
     std::string serialize(const INode& node);
