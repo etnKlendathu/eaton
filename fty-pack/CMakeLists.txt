@@ -33,8 +33,9 @@ raven_target(shared ${PROJECT_NAME}
         src/providers/zconfig.cpp
         src/providers/protobuf.cpp
         src/providers/serialization.cpp
-    USES
+    USES_PUBLIC
         fty-utils
+    USES
         yaml-cpp
         libczmq
         protobuf::libprotobuf
@@ -74,21 +75,21 @@ fty_protogen(
 
 ##############################################################################################################
 
-raven_define_component(dev
-    NAME    "fty-pack"
+raven_define_component(${PROJECT_NAME}-dev
     TARGETS ${PROJECT_NAME}
 )
 
-raven_define_component(runtime
+raven_define_component(${PROJECT_NAME}-runtime
     SHLIBDEPS
-    NAME    "fty-pack"
     TARGETS ${PROJECT_NAME}
 )
 
 raven_pack(
-    CONTACT     "zjesclean@gmail.com"
-    COMPONENTS  dev runtime
-    DESCRIPTION "Simple cmake wrapper to easy target creation, packing"
+    PKG_NAME        "fty-pack"
+    CONTACT         "zjesclean@gmail.com"
+    COMPONENTS      ${PROJECT_NAME}-dev ${PROJECT_NAME}-runtime
+    DESCRIPTION     "Simple cmake wrapper to easy target creation, packing"
+    LD_LIBRARY_PATH "${RUNTIME_PREFIX}/lib"
 )
 
 ##############################################################################################################

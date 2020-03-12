@@ -25,9 +25,30 @@ raven_target(exe ${PROJECT_NAME}
         protobuf::libprotoc
 )
 
+##############################################################################################################
+
+# Proto requires strong naming for generator plugin
 set_target_properties(${PROJECT_NAME} PROPERTIES OUTPUT_NAME protoc-gen-fty)
 
-#raven_define_component(fty-protoc-dev
-#    NAME    fty-protoc
-#    TARGETS ${PROJECT_NAME}
-#)
+##############################################################################################################
+
+raven_define_component(${PROJECT_NAME}-dev
+    TARGETS       ${PROJECT_NAME}
+    BUILD_DEPENDS "protobuf"
+    DEPENDS       "cmake (>= 3.10)"
+)
+
+raven_define_component(${PROJECT_NAME}-runtime
+    SHLIBDEPS
+    TARGETS       ${PROJECT_NAME}
+)
+
+raven_pack(
+    PKG_NAME    fty-protoc
+    CONTACT     "zjes <zjesclean@gmail.com>"
+    COMPONENTS  ${PROJECT_NAME}-dev ${PROJECT_NAME}-runtime
+    DESCRIPTION "Some useful utilites"
+)
+
+##############################################################################################################
+
