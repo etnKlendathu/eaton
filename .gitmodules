@@ -4,3 +4,4 @@
 [submodule "fty-common-logging"]
 	path = fty-common-logging
 	url = https://github.com/etnKlendathu/fty-common-logging.git
+	branch = experiment
