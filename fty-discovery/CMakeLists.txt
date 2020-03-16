@@ -37,7 +37,6 @@ raven_target(exe ${PROJECT_NAME}
         src/wrappers/mlm.h
         src/wrappers/zmessage.h
     USES
-        fty-utils
         fty-common-logging
         pack
         libcidr

@@ -5,3 +5,13 @@ message Item {
     string name = 1;
     map<string, int32> intMap = 2;
 }
+
+message SubItem
+{
+    string value = 1;
+}
+
+message Item1 {
+    string name = 1;
+    map<string, SubItem> intMap = 2;
+}

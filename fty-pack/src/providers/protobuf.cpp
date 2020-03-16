@@ -179,6 +179,18 @@ public:
         auto refl = std::get<0>(proto)->GetReflection();
         refl->SetEnumValue(std::get<0>(proto), std::get<1>(proto), en.asInt());
     }
+
+    static void packValue(const IProtoMap& map, WalkType& proto)
+    {
+        auto refl = std::get<0>(proto)->GetReflection();
+        for (int i = 0; i < map.size(); ++i) {
+            const INode& node       = map.get(i);
+            pb::Message* child      = refl->AddMessage(std::get<0>(proto), std::get<1>(proto));
+            auto         childProto = std::make_tuple(child, std::get<1>(proto));
+            visit(node, childProto);
+        }
+    }
+
 };
 
 class ProtoDeserializer : public Deserialize<ProtoDeserializer>
@@ -225,6 +237,20 @@ public:
             }
         }
     }
+
+    static void unpackValue(IProtoMap& map, const WalkType& proto)
+    {
+        auto refl = std::get<0>(proto)->GetReflection();
+
+        for (int i = 0; i < refl->FieldSize(*std::get<0>(proto), std::get<1>(proto)); ++i) {
+            const pb::Message& msg   = refl->GetRepeatedMessage(*std::get<0>(proto), std::get<1>(proto), i);
+
+            auto&              obj   = map.create();
+            auto               child = WalkType(&msg, nullptr);
+            visit(obj, child);
+        }
+    }
+
 };
 
 

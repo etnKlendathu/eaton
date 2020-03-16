@@ -61,6 +61,18 @@ struct Convert
     }
 };
 
+static void copy(zconfig_t* dest, zconfig_t* src)
+{
+    for (zconfig_t* item = zconfig_child(src); item; item = zconfig_next(item)) {
+        auto child = zconfig_new(zconfig_name(item), dest);
+        if (zconfig_value(item)) {
+            zconfig_set_value(child, "%s", zconfig_value(item));
+        } else if (zconfig_child(child)) {
+            copy(child, item);
+        }
+    }
+}
+
 class ZSerializer : public Serialize<ZSerializer>
 {
 public:
@@ -94,6 +106,28 @@ public:
     static void packValue(const IEnum& en, zconfig_t* zconf)
     {
         zconfig_set_value(zconf, "%s", en.asString().c_str());
+    }
+
+    static void packValue(const IProtoMap& map, zconfig_t* zconf)
+    {
+        for(int i = 0; i < map.size(); ++i) {
+            const INode& node = map.get(i);
+
+            auto temp = zconfig_new("", nullptr);
+            packValue(node, temp);
+
+            auto zkey = zconfig_locate(temp, "key");
+            auto zval = zconfig_locate(temp, "value");
+
+            auto child = zconfig_new(zconfig_value(zkey), zconf);
+            if (auto val = zconfig_child(zval)) {
+                copy(child, zval);
+            } else {
+                zconfig_set_value(child, "%s", zconfig_value(zval));
+            }
+
+            zconfig_destroy(&temp);
+        }
     }
 };
 
@@ -129,6 +163,28 @@ public:
             if (auto found = zconfig_locate(conf, it->key().c_str())) {
                 visit(*it, found);
             }
+        }
+    }
+
+    static void unpackValue(IProtoMap& map, zconfig_t* conf)
+    {
+        for (zconfig_t* item = zconfig_child(conf); item; item = zconfig_next(item)) {
+            INode& obj = map.create();
+
+            auto temp = zconfig_new(nullptr, nullptr);
+            auto zkey = zconfig_new("key", temp);
+            zconfig_set_value(zkey, "%s", zconfig_name(item));
+            auto zval = zconfig_new("value", temp);
+
+            if (zconfig_child(item)) {
+                copy(zval, item);
+            } else {
+                zconfig_set_value(zval, "%s", zconfig_value(item));
+            }
+
+            visit(obj, temp);
+
+            zconfig_destroy(&temp);
         }
     }
 };

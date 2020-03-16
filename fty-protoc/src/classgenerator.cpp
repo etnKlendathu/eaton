@@ -13,7 +13,41 @@ const Descriptor* ClassGenerator::descriptor() const
     return m_desc;
 }
 
-void ClassGenerator::generateHeader(Formatter& frm, const std::string& descNamespace) const
+static std::string usingType(const protobuf::FieldDescriptor* fld)
+{
+    switch (fld->cpp_type()) {
+        case FieldDescriptor::CPPTYPE_STRING:
+            return "std::string";
+        case FieldDescriptor::CPPTYPE_BOOL:
+            return "bool";
+        case FieldDescriptor::CPPTYPE_INT64:
+            return "int64_t";
+        case FieldDescriptor::CPPTYPE_INT32:
+            return "int32_t";
+        case FieldDescriptor::CPPTYPE_FLOAT:
+            return "float";
+        case FieldDescriptor::CPPTYPE_DOUBLE:
+            return "double";
+        case FieldDescriptor::CPPTYPE_UINT32:
+            return "uint32_t";
+        case FieldDescriptor::CPPTYPE_UINT64:
+            return "uint64_t";
+        case FieldDescriptor::CPPTYPE_ENUM:
+            return fld->enum_type()->name();
+        case FieldDescriptor::CPPTYPE_MESSAGE: {
+            std::string            name = fld->message_type()->full_name();
+            std::string::size_type n    = 0;
+            while ((n = name.find(".", n)) != std::string::npos) {
+                name.replace(n, 1, "::");
+                ++n;
+            }
+            return name;
+        }
+    }
+    return {};
+}
+
+void ClassGenerator::generateHeader(Formatter& frm, const std::string& descNamespace, bool asMap) const
 {
     frm << "class " << m_desc->name() << ": public pack::Node"
         << "\n";
@@ -21,15 +55,42 @@ void ClassGenerator::generateHeader(Formatter& frm, const std::string& descNames
     frm << "public:\n";
     frm.indent();
     frm << "using pack::Node::Node;\n\n";
+    if (asMap) {
+        std::string key;
+        std::string value;
+
+        for (int i = 0; i < m_desc->field_count(); ++i) {
+            const auto& fld = m_desc->field(i);
+            if (fld->name() == "key") {
+                key = usingType(fld);
+            }
+            if (fld->name() == "value") {
+                value = usingType(fld);
+            }
+        }
+
+        frm << "using KeyType = " << key << ";\n";
+        frm << "using ValueType = " << value << ";\n";
+    }
     frm.outdent();
 
     if (m_desc->nested_type_count()) {
         frm << "public:\n";
         frm.indent();
         for (int i = 0; i < m_desc->nested_type_count(); ++i) {
-            const auto&    type = m_desc->nested_type(i);
+            const auto& type = m_desc->nested_type(i);
+
+            bool usedInMap = false;
+            for (int i = 0; i < m_desc->field_count(); ++i) {
+                const auto& fld = m_desc->field(i);
+                if (fld->is_map() && fld->message_type() == type) {
+                    usedInMap = true;
+                    break;
+                }
+            }
+
             ClassGenerator nested(type);
-            nested.generateHeader(frm, descNamespace);
+            nested.generateHeader(frm, descNamespace, usedInMap);
         }
     }
 
@@ -146,24 +207,25 @@ void ClassGenerator::generateHeader(Formatter& frm, const std::string& descNames
 
 std::string ClassGenerator::cppType(const FieldDescriptor* fld) const
 {
+    using namespace std::string_literals;
     bool isList = fld->is_repeated();
     switch (fld->cpp_type()) {
         case FieldDescriptor::CPPTYPE_STRING:
-            return isList ? "pack::ValueList<pack::Type::String>" : "pack::String";
+            return "pack::String"s + (isList ? "List" : "");
         case FieldDescriptor::CPPTYPE_BOOL:
-            return isList ? "pack::ValueList<pack::Type::Bool>" : "pack::Bool";
+            return "pack::Bool"s + (isList ? "List>" : "");
         case FieldDescriptor::CPPTYPE_INT64:
-            return isList ? "pack::ValueList<pack::Type::Int64>" : "pack::Int64";
+            return "pack::Int64"s + (isList ? "List" : "");
         case FieldDescriptor::CPPTYPE_INT32:
-            return isList ? "pack::ValueList<pack::Type::Int32>" : "pack::Int32";
+            return "pack::Int32"s + (isList ? "List" : "");
         case FieldDescriptor::CPPTYPE_FLOAT:
-            return isList ? "pack::ValueList<pack::Type::Float>" : "pack::Float";
+            return "pack::Float"s + (isList ? "List" : "");
         case FieldDescriptor::CPPTYPE_DOUBLE:
-            return isList ? "pack::ValueList<pack::Type::Double" : "pack::Double";
+            return "pack::Double"s + (isList ? "List" : "");
         case FieldDescriptor::CPPTYPE_UINT32:
-            return isList ? "pack::ValueList<pack::Type::UInt32>" : "pack::Uint32";
+            return "pack::Uint32"s + (isList ? "List" : "");
         case FieldDescriptor::CPPTYPE_UINT64:
-            return isList ? "pack::ValueList<pack::Type::UInt64>" : "pack::Uint64";
+            return "pack::Uint64"s + (isList ? "List" : "");
         case FieldDescriptor::CPPTYPE_ENUM:
             return "pack::Enum<" + std::string(fld->enum_type()->name()) + ">";
         case FieldDescriptor::CPPTYPE_MESSAGE: {
@@ -173,7 +235,11 @@ std::string ClassGenerator::cppType(const FieldDescriptor* fld) const
                 name.replace(n, 1, "::");
                 ++n;
             }
-            return isList ? "pack::ObjectList<" + name + ">" : name;
+            if (fld->is_map()) {
+                return "pack::ProtoMap<" + name + ">";
+            } else {
+                return isList ? "pack::ObjectList<" + name + ">" : name;
+            }
         }
     }
 }

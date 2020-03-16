@@ -7,21 +7,16 @@ TEST_CASE("Map serialization/deserialization")
     test5::Item origin;
     origin.name = "some name";
 
-    auto& val = origin.intMap.append();
-    val.key   = "key1";
-    val.value = 42;
-
-    auto& val2 = origin.intMap.append();
-    val2.key   = "key2";
-    val2.value = 66;
+    origin.intMap.append("key1", 42);
+    origin.intMap.append("key2", 66);
 
     auto check = [](const test5::Item& item) {
         REQUIRE("some name" == item.name);
         REQUIRE(2 == item.intMap.size());
-        REQUIRE("key1" == item.intMap[0].key);
-        REQUIRE("key2" == item.intMap[1].key);
-        REQUIRE(42 == item.intMap[0].value);
-        REQUIRE(66 == item.intMap[1].value);
+        CHECK(item.intMap.contains("key1"));
+        CHECK(item.intMap.contains("key2"));
+        CHECK(42 == item.intMap["key1"]);
+        CHECK(66 == item.intMap["key2"]);
     };
 
     check(origin);
@@ -71,6 +66,76 @@ TEST_CASE("Map serialization/deserialization")
     }
 }
 
+TEST_CASE("Map of structs serialization/deserialization")
+{
+    test5::Item1 origin;
+    origin.name = "some name";
+
+    test5::SubItem s1;
+    s1.value = "value 1";
+
+    test5::SubItem s2;
+    s2.value = "value 2";
+
+    origin.intMap.append("key1", s1);
+    origin.intMap.append("key2", s2);
+
+    auto check = [](const test5::Item1& item) {
+        REQUIRE("some name" == item.name);
+        REQUIRE(2 == item.intMap.size());
+        CHECK(item.intMap.contains("key1"));
+        CHECK(item.intMap.contains("key2"));
+        CHECK("value 1" == item.intMap["key1"].value);
+        CHECK("value 2" == item.intMap["key2"].value);
+    };
+
+    check(origin);
+
+    SECTION("Serialization yaml")
+    {
+        std::string cnt = pack::yaml::serialize(origin);
+        REQUIRE(!cnt.empty());
+
+        test5::Item1 restored;
+        pack::yaml::deserialize(cnt, restored);
+
+        check(restored);
+    }
+
+    SECTION("Serialization json")
+    {
+        std::string cnt = pack::json::serialize(origin);
+        REQUIRE(!cnt.empty());
+
+        test5::Item1 restored;
+        pack::json::deserialize(cnt, restored);
+
+        check(restored);
+    }
+
+    SECTION("Serialization zconfig")
+    {
+        std::string cnt = pack::zconfig::serialize(origin);
+        REQUIRE(!cnt.empty());
+
+        test5::Item1 restored;
+        pack::zconfig::deserialize(cnt, restored);
+
+        check(restored);
+    }
+
+    SECTION("Serialization protobuf bin")
+    {
+        std::string cnt = pack::protobuf::serialize(origin);
+        REQUIRE(!cnt.empty());
+
+        test5::Item1 restored;
+        pack::protobuf::deserialize(cnt, restored);
+
+        check(restored);
+    }
+}
+
 struct TestMap : public pack::Node
 {
     using pack::Node::Node;
@@ -109,7 +174,6 @@ TEST_CASE("Simple map serialization/deserialization")
     {
         std::string cnt = pack::yaml::serialize(origin);
         REQUIRE(!cnt.empty());
-        std::cerr << cnt << std::endl;
 
         TestMap restored;
         pack::yaml::deserialize(cnt, restored);

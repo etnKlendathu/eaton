@@ -24,6 +24,7 @@ raven_target(shared ${PROJECT_NAME}
         pack/magic_enum.h
         pack/types.h
         pack/serialization.h
+        pack/proto-map.h
 
     SOURCES
         src/node.cpp

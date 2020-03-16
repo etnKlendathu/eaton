@@ -21,6 +21,12 @@ public:
     }
 
     template<typename Resource>
+    static void visit(IProtoMap& map, const Resource& res)
+    {
+        Worker::unpackValue(map, res);
+    }
+
+    template<typename Resource>
     static void visit(IList& list, const Resource& res)
     {
         if (auto casted = dynamic_cast<IObjectList*>(&list)) {
@@ -138,7 +144,12 @@ public:
             visit(static_cast<IList&>(node), res);
             break;
         case Attribute::NodeType::Map:
-            visit(static_cast<IMap&>(node), res);
+            if (auto casted = dynamic_cast<IProtoMap*>(&node)) {
+                visit(*casted, res);
+            }
+            if (auto casted = dynamic_cast<IMap*>(&node)) {
+                visit(*casted, res);
+            }
             break;
         case Attribute::NodeType::Node:
             visit(static_cast<INode&>(node), res);
@@ -165,6 +176,12 @@ public:
     static void visit(const IEnum& en, Resource& res)
     {
         Worker::packValue(en, res);
+    }
+
+    template<typename Resource>
+    static void visit(const IProtoMap& map, Resource& res)
+    {
+        Worker::packValue(map, res);
     }
 
     template<typename Resource>
@@ -285,7 +302,12 @@ public:
             visit(static_cast<const IList&>(node), res);
             break;
         case Attribute::NodeType::Map:
-            visit(static_cast<const IMap&>(node), res);
+            if (auto casted = dynamic_cast<const IProtoMap*>(&node)) {
+                visit(*casted, res);
+            }
+            if (auto casted = dynamic_cast<const IMap*>(&node)) {
+                visit(*casted, res);
+            }
             break;
         case Attribute::NodeType::Node:
             visit(static_cast<const INode&>(node), res);

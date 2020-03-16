@@ -1,6 +1,6 @@
 #pragma once
+#include <fty/expected.h>
 #include <memory>
-#include <utils/expected.h>
 
 struct _zmsg_t;
 using zmsg_t = _zmsg_t;
@@ -15,18 +15,18 @@ class Mlm
 public:
     Mlm();
 
-    bool          connect(const std::string& endpoint, uint32_t timeout, const std::string& address);
-    Expected<int> sendto(const std::string& address, const std::string& subject, const std::string& tracker,
-        uint32_t timeout, zmsg_t** content);
-    Expected<int> sendto(const std::string& address, const std::string& subject, const std::string& tracker,
-        uint32_t timeout, ZMessage&& content);
-    Expected<zmsg_t*> recv();
-    Expected<int>     setConsumer(const std::string& stream, const std::string& pattern);
-    std::string       sender();
-    std::string       subject();
-    std::string       tracker();
-    zsock_t*          msgpipe();
-    std::string       command();
+    bool                   connect(const std::string& endpoint, uint32_t timeout, const std::string& address);
+    fty::Expected<int>     sendto(const std::string& address, const std::string& subject,
+            const std::string& tracker, uint32_t timeout, zmsg_t** content);
+    fty::Expected<int>     sendto(const std::string& address, const std::string& subject,
+            const std::string& tracker, uint32_t timeout, ZMessage&& content);
+    fty::Expected<zmsg_t*> recv();
+    fty::Expected<int>     setConsumer(const std::string& stream, const std::string& pattern);
+    std::string            sender();
+    std::string            subject();
+    std::string            tracker();
+    zsock_t*               msgpipe();
+    std::string            command();
 
 
     // mlm_client_msgpipe

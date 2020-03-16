@@ -8,6 +8,6 @@ add_subdirectory(fty-utils)
 add_subdirectory(fty-protoc)
 add_subdirectory(fty-pack)
 
-#add_subdirectory(fty-common-logging)
+add_subdirectory(fty-common-logging)
 #add_subdirectory(fty-common-messagebus)
 #add_subdirectory(fty-discovery)

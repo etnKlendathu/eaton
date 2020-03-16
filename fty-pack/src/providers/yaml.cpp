@@ -91,6 +91,20 @@ public:
             }
         }
     }
+
+    static void unpackValue(IProtoMap& map, const YAML::Node& yaml)
+    {
+        for (const auto& child : yaml) {
+            INode& obj = map.create();
+
+            YAML::Node temp;
+            temp["key"] = child.first;
+            temp["value"] = child.second;
+
+            visit(obj, temp);
+        }
+    }
+
 };
 
 // ===========================================================================================================
@@ -129,6 +143,18 @@ public:
     static void packValue(const IEnum& en, YAML::Node& yaml)
     {
         yaml = YAML::convert<std::string>::encode(en.asString());
+    }
+
+    static void packValue(const IProtoMap& map, YAML::Node& yaml)
+    {
+        for(int i = 0; i < map.size(); ++i) {
+            const INode& node = map.get(i);
+
+            YAML::Node temp;
+            packValue(node, temp);
+
+            yaml[temp["key"]] = temp["value"];
+        }
     }
 };
 

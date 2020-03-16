@@ -5,6 +5,7 @@
 #include "pack/node.h"
 #include "pack/serialization.h"
 #include "pack/value.h"
+#include "pack/proto-map.h"
 
 namespace pack {
 

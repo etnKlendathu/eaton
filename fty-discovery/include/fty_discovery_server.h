@@ -20,7 +20,7 @@
 */
 
 #pragma once
-#include <mutex>
+#include <memory>
 #include <pack/pack.h>
 
 struct Config : public pack::Node
@@ -102,6 +102,16 @@ struct Config : public pack::Node
     META(Config, server, discovery, parameters, log)
 };
 
+class Discovery
+{
+public:
+    Discovery();
+    ~Discovery();
+
+private:
+    class Impl;
+    std::unique_ptr<Impl> m_impl;
+};
 
 #define DEFAULT_DUMPDATA_LOOP "2"
 

@@ -1,7 +1,7 @@
 #pragma once
 #include <memory>
 #include <czmq.h>
-#include <utils/expected.h>
+#include <fty/expected.h>
 #include <fty_proto.h>
 
 class ZMessage
@@ -26,14 +26,14 @@ public:
     ZMessage(ZMessage&&) = default;
     ZMessage& operator=(ZMessage&&) = default;
 
-    Expected<std::string> popStr() const
+    fty::Expected<std::string> popStr() const
     {
         if (char* str = zmsg_popstr(m_message.get())) {
             std::string ret = str;
             zstr_free(&str);
-            return ret;
+            return std::move(ret);
         }
-        return unexpected("Empty command");
+        return fty::unexpected("Empty command");
     }
 
     void addStr(const std::string& str)
