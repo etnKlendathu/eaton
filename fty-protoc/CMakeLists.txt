@@ -21,6 +21,7 @@ raven_target(exe ${PROJECT_NAME}
     PREPROCESSOR
         -DPROTOBUF_USE_DLLS
     USES
+        fty-utils
         protobuf::libprotobuf
         protobuf::libprotoc
 )

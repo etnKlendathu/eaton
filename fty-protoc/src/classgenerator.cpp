@@ -1,5 +1,9 @@
 #include "classgenerator.h"
 #include "formatter.h"
+#include <fty/split.h>
+#include <google/protobuf/descriptor.pb.h>
+#include <google/protobuf/extension_set.h>
+#include <iostream>
 
 namespace google::protobuf::compiler::fty {
 
@@ -45,6 +49,27 @@ static std::string usingType(const protobuf::FieldDescriptor* fld)
         }
     }
     return {};
+}
+
+static std::vector<const FieldDescriptor*> getExtensions(const FileDescriptor* file)
+{
+    std::vector<const FieldDescriptor*> ret;
+    // std::cerr << file->name() << file->extension_count() << std::endl;
+    for (int j = 0; j < file->dependency_count(); ++j) {
+        auto dep = file->dependency(j);
+        for (int i = 0; i < dep->extension_count(); ++i) {
+            if (dep->extension(i)->name().find("DefaultValue") != std::string::npos) {
+                ret.push_back(dep->extension(i));
+            }
+        }
+    }
+
+    for (int i = 0; i < file->extension_count(); ++i) {
+        if (file->extension(i)->name().find("DefaultValue") != std::string::npos) {
+            ret.push_back(file->extension(i));
+        }
+    }
+    return ret;
 }
 
 void ClassGenerator::generateHeader(Formatter& frm, const std::string& descNamespace, bool asMap) const
@@ -114,9 +139,26 @@ void ClassGenerator::generateHeader(Formatter& frm, const std::string& descNames
     frm << "public:\n";
     frm.indent();
 
+    auto deps = getExtensions(m_desc->file());
+
     for (int i = 0; i < m_desc->field_count(); ++i) {
         const auto& fld = m_desc->field(i);
-        frm << cppType(fld) << " " << fld->camelcase_name() << " = FIELD(\"" << fld->name() << "\")"
+
+        std::string         def;
+        const FieldOptions& opts = fld->options();
+        for (auto dep : deps) {
+            auto [id, val] = ::fty::split<int, std::string>(opts.DebugString(), ":");
+            if (dep->number() == id) {
+                def = val;
+            }
+        }
+
+        if (!def.empty()) {
+            def = ", " + def;
+        }
+
+        frm << cppType(fld) << " " << fld->camelcase_name() << " = FIELD(\"" << fld->name() << "\"" << def
+            << ")"
             << ";\n";
     }
 
@@ -223,9 +265,9 @@ std::string ClassGenerator::cppType(const FieldDescriptor* fld) const
         case FieldDescriptor::CPPTYPE_DOUBLE:
             return "pack::Double"s + (isList ? "List" : "");
         case FieldDescriptor::CPPTYPE_UINT32:
-            return "pack::Uint32"s + (isList ? "List" : "");
+            return "pack::UInt32"s + (isList ? "List" : "");
         case FieldDescriptor::CPPTYPE_UINT64:
-            return "pack::Uint64"s + (isList ? "List" : "");
+            return "pack::UInt64"s + (isList ? "List" : "");
         case FieldDescriptor::CPPTYPE_ENUM:
             return "pack::Enum<" + std::string(fld->enum_type()->name()) + ">";
         case FieldDescriptor::CPPTYPE_MESSAGE: {

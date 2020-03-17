@@ -55,6 +55,11 @@ void FileGenerator::generateHeader(io::Printer& printer) const
             path.replace(n, 1, "::");
             ++n;
         }
+        n = 0;
+        while ((n = path.find("-", n)) != std::string::npos) {
+            path.replace(n, 1, "_");
+            ++n;
+        }
     }
 
     std::stringstream ss;

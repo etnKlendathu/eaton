@@ -44,3 +44,13 @@ raven_target(exe ${PROJECT_NAME}
         libfty_proto
         libfty_common_db
 )
+
+
+fty_protogen(
+    TARGET ${PROJECT_NAME}
+    WORKDIR proto
+    PROTO
+        proto/config.proto
+        proto/default-values.proto
+)
+

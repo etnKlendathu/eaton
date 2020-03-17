@@ -75,9 +75,8 @@ struct _fty_discovery_server_t
     std::string                        percent;
     discovered_devices_t               devices_discovered;
     fty::nut::KeyValues                nut_mapping_inventory;
-    std::map<std::string, std::string> default_values_aux;
-    std::map<std::string, std::string> default_values_ext;
     std::vector<link_t>                default_values_links;
+    Config                             m_config;
 };
 
 zactor_t* range_scanner_new(fty_discovery_server_t* self)
@@ -328,13 +327,11 @@ void configure_local_scan(fty_discovery_server_t* self)
 
 bool compute_configuration_file(fty_discovery_server_t* self)
 {
-    Config conf = pack::zconfig::deserializeFile<Config>(self->range_scan_config.config);
-
-    self->default_values_aux = conf.discovery.defaultValuesAux.value();
-    self->default_values_ext = conf.discovery.defaultValuesExt.value();
+    self->m_config.clear();
+    pack::zconfig::deserializeFile(self->range_scan_config.config, self->m_config);
 
     self->default_values_links.clear();
-    for (const auto& val : conf.discovery.defaultValuesLinks) {
+    for (const auto& val : self->m_config.discovery.defaultValuesLinks) {
         link_t l;
         l.src     = val.src;
         l.dest    = 0;
@@ -349,38 +346,38 @@ bool compute_configuration_file(fty_discovery_server_t* self)
 
     bool valid = true;
 
-    if (conf.discovery.scans.empty() && conf.discovery.type == Config::Discovery::Type::multiscan) {
+    if (self->m_config.discovery.scans.empty() && self->m_config.discovery.type == Config::Discovery::Type::MultiScan) {
         valid = false;
         logError() << "error in config file" << self->range_scan_config.config
                    << ": can't have rangescan without range";
-    } else if (conf.discovery.ips.empty() && conf.discovery.type == Config::Discovery::Type::ipscan) {
+    } else if (self->m_config.discovery.ips.empty() && self->m_config.discovery.type == Config::Discovery::Type::IpScan) {
         valid = false;
         logError() << "error in config file" << self->range_scan_config.config
                    << ": can't have ipscan without ip list";
     } else {
-        if (conf.discovery.type == Config::Discovery::Type::multiscan) {
-            if (auto sizeTemp = compute_scans_size(conf.discovery.scans)) {
-                self->configuration_scan.type      = Config::Discovery::Type::multiscan;
+        if (self->m_config.discovery.type == Config::Discovery::Type::MultiScan) {
+            if (auto sizeTemp = compute_scans_size(self->m_config.discovery.scans)) {
+                self->configuration_scan.type      = Config::Discovery::Type::MultiScan;
                 self->configuration_scan.scan_size = *sizeTemp;
-                self->configuration_scan.scan_list = conf.discovery.scans.value();
+                self->configuration_scan.scan_list = self->m_config.discovery.scans.value();
             } else {
                 valid = false;
                 logError() << sizeTemp.error();
                 logError() << "Error in config file" << self->range_scan_config.config
                            << ": error in range or subnet";
             }
-        } else if (conf.discovery.type == Config::Discovery::Type::ipscan) {
-            if (!compute_ip_list(conf.discovery.ips)) {
+        } else if (self->m_config.discovery.type == Config::Discovery::Type::IpScan) {
+            if (!compute_ip_list(self->m_config.discovery.ips)) {
                 valid = false;
                 logError() << "Error in config file" << self->range_scan_config.config
                            << ": error in ip list";
             } else {
-                self->configuration_scan.type      = Config::Discovery::Type::ipscan;
-                self->configuration_scan.scan_size = int64_t(conf.discovery.ips.size());
-                self->configuration_scan.scan_list = conf.discovery.ips.value();
+                self->configuration_scan.type      = Config::Discovery::Type::IpScan;
+                self->configuration_scan.scan_size = int64_t(self->m_config.discovery.ips.size());
+                self->configuration_scan.scan_list = self->m_config.discovery.ips.value();
             }
-        } else if (conf.discovery.type == Config::Discovery::Type::localscan) {
-            self->configuration_scan.type = Config::Discovery::Type::localscan;
+        } else if (self->m_config.discovery.type == Config::Discovery::Type::LocalScan) {
+            self->configuration_scan.type = Config::Discovery::Type::LocalScan;
         } else {
             valid = false;
         }
@@ -471,11 +468,11 @@ void ftydiscovery_create_asset(fty_discovery_server_t* self, ZMessage&& msg_p)
         }
     }
 
-    for (const auto& property : self->default_values_aux) {
-        fty_proto_aux_insert(asset, property.first.c_str(), property.second.c_str());
+    for (const auto& property : self->m_config.discovery.defaultValuesAux) {
+        fty_proto_aux_insert(asset, property.key.value().c_str(), property.value.value().c_str());
     }
-    for (const auto& property : self->default_values_ext) {
-        fty_proto_ext_insert(asset, property.first.c_str(), property.second.c_str());
+    for (const auto& property : self->m_config.discovery.defaultValuesExt) {
+        fty_proto_ext_insert(asset, property.key.value().c_str(), property.value.value().c_str());
     }
 
     fty_proto_print(asset);
@@ -593,11 +590,11 @@ static bool s_handle_pipe(fty_discovery_server_t* self, ZMessage&& message, zpol
 
         bool valid = true;
 
-        if (conf.discovery.scans.empty() && conf.discovery.type == Config::Discovery::Type::multiscan) {
+        if (conf.discovery.scans.empty() && conf.discovery.type == Config::Discovery::Type::MultiScan) {
             valid = false;
             logError() << "error in config file" << self->range_scan_config.config
                        << ": can't have rangescan without range";
-        } else if (conf.discovery.ips.empty() && conf.discovery.type == Config::Discovery::Type::ipscan) {
+        } else if (conf.discovery.ips.empty() && conf.discovery.type == Config::Discovery::Type::IpScan) {
             valid = false;
             logError() << "error in config file " << self->range_scan_config.config
                        << ": can't have ipscan without ip list";
@@ -610,7 +607,7 @@ static bool s_handle_pipe(fty_discovery_server_t* self, ZMessage&& message, zpol
                 self->configuration_scan.scan_list.clear();
                 self->configuration_scan.scan_list = conf.discovery.scans.value();
 
-                if (self->configuration_scan.type == Config::Discovery::Type::ipscan) {
+                if (self->configuration_scan.type == Config::Discovery::Type::IpScan) {
                     self->configuration_scan.scan_size = conf.discovery.ips.size();
                     self->configuration_scan.scan_list.clear();
                     self->configuration_scan.scan_list = conf.discovery.ips.value();
@@ -750,7 +747,7 @@ void static s_handle_mailbox(fty_discovery_server_t* self, ZMessage&& msg, zpoll
                 self->nb_percent = 0;
 
                 if (compute_configuration_file(self)) {
-                    if (self->configuration_scan.type == Config::Discovery::Type::localscan) {
+                    if (self->configuration_scan.type == Config::Discovery::Type::LocalScan) {
                         // Launch localScan
                         configure_local_scan(self);
 
@@ -779,8 +776,8 @@ void static s_handle_mailbox(fty_discovery_server_t* self, ZMessage&& msg, zpoll
                             reply.addStr(RESP_ERR);
                         }
 
-                    } else if ((self->configuration_scan.type == Config::Discovery::Type::multiscan) ||
-                               (self->configuration_scan.type == Config::Discovery::Type::ipscan)) {
+                    } else if ((self->configuration_scan.type == Config::Discovery::Type::MultiScan) ||
+                               (self->configuration_scan.type == Config::Discovery::Type::IpScan)) {
                         // Launch rangeScan
                         self->localscan_subscan = self->configuration_scan.scan_list;
                         self->scan_size         = self->configuration_scan.scan_size;

@@ -22,7 +22,9 @@
 #pragma once
 #include <memory>
 #include <pack/pack.h>
+#include "config.h"
 
+#if 0
 struct Config : public pack::Node
 {
     using pack::Node::Node;
@@ -101,6 +103,7 @@ struct Config : public pack::Node
 
     META(Config, server, discovery, parameters, log)
 };
+#endif
 
 class Discovery
 {

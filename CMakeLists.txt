@@ -10,4 +10,4 @@ add_subdirectory(fty-pack)
 
 add_subdirectory(fty-common-logging)
 #add_subdirectory(fty-common-messagebus)
-#add_subdirectory(fty-discovery)
+add_subdirectory(fty-discovery)
