@@ -19,15 +19,9 @@
     =========================================================================
 */
 
-/*
-@header
-    device_scan - Perform one IP address scan
-@discuss
-@end
-*/
-
-#include "fty_discovery_classes.h"
 #include <algorithm>
+#include <fty/fty-log.h>
+
 bool device_scan_scan (zlist_t *listScans, discovered_devices_t *devices, zsock_t *pipe, const fty::nut::KeyValues *mappings, const std::set<std::string> &documentIds)
 {
     CIDRList *listAddr = (CIDRList *) zlist_first(listScans);

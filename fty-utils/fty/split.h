@@ -80,7 +80,7 @@ namespace detail {
         return {convert<T>(Idx < val.size() ? val[Idx] : "")...};
     }
 
-    void addString(std::vector<std::string>& ret, SplitOption opt, const std::string& val)
+    inline void addString(std::vector<std::string>& ret, SplitOption opt, const std::string& val)
     {
         if (isSet(opt, SplitOption::SkipEmpty) && val.empty()) {
             return;

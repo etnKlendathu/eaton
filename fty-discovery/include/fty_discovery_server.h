@@ -20,109 +20,56 @@
 */
 
 #pragma once
+#include "config.h"
+#include "src/wrappers/actor.h"
+#include "src/wrappers/zmessage.h"
 #include <memory>
 #include <pack/pack.h>
-#include "config.h"
 
-#if 0
-struct Config : public pack::Node
+class Discovery : public Actor
 {
-    using pack::Node::Node;
-    struct Server : public pack::Node
+public:
+    static constexpr const char* Endpoint  = "ipc://@/malamute";
+    static constexpr const char* ActorName = "fty-discovery";
+
+    enum class Command
     {
-        using pack::Node::Node;
-        pack::Int32  timeout    = FIELD("timeout");
-        pack::Bool   background = FIELD("background");
-        pack::String workdir    = FIELD("workdir");
-        pack::Bool   verbose    = FIELD("verbose");
-        META(Server, timeout, background, workdir, verbose)
+        Term,
+        Bind,
+        Consumer,
+        Republish,
+        Scan,
+        LocalScan,
+        SetConfig,
+        GetConfig,
+        Config,
+        LaunchScan,
+        Progress,
+        StopScan,
+        Done,
+        Found,
     };
 
-    struct Discovery : public pack::Node
-    {
-        using pack::Node::Node;
-
-        struct Link : public pack::Node
-        {
-            using pack::Node::Node;
-
-            pack::UInt32 src  = FIELD("src");
-            pack::UInt32 type = FIELD("dest");
-
-            META(Link, src, type)
-        };
-
-        enum class Type
-        {
-            localscan = 1,
-            multiscan = 2,
-            ipscan    = 3
-        };
-
-        pack::Enum<Type>       type               = FIELD("type");
-        pack::StringList       scans              = FIELD("scans");
-        pack::StringList       ips                = FIELD("ips");
-        pack::String           scanNumber         = FIELD("scanNumber");
-        pack::String           ipNumber           = FIELD("ipNumber");
-        pack::StringList       documents          = FIELD("documents");
-        pack::StringMap        defaultValuesAux   = FIELD("defaultValuesAux");
-        pack::StringMap        defaultValuesExt   = FIELD("defaultValuesExt");
-        pack::ObjectList<Link> defaultValuesLinks = FIELD("defaultValuesLinks");
-
-        META(Discovery, type, scans, ips, scanNumber, ipNumber, documents, defaultValuesAux, defaultValuesExt,
-            defaultValuesLinks)
-    };
-
-    struct Parameters : public pack::Node
-    {
-        using pack::Node::Node;
-
-        pack::String mappingFile       = FIELD("mappingFile");
-        pack::Int32  maxDumpPoolNumber = FIELD("maxDumpPoolNumber", 15);
-        pack::Int32  maxScanPoolNumber = FIELD("maxScanPoolNumber", 4);
-        pack::Int32  nutScannerTimeOut = FIELD("nutScannerTimeOut", 20);
-        pack::Int32  dumpDataLoopTime  = FIELD("dumpDataLoopTime", 30);
-
-        META(Parameters, mappingFile, maxDumpPoolNumber, maxScanPoolNumber, nutScannerTimeOut,
-            dumpDataLoopTime)
-    };
-
-    struct Log : public pack::Node
-    {
-        using pack::Node::Node;
-
-        pack::String config = FIELD("config", "/etc/fty/ftylog.cfg");
-
-        META(Log, config)
-    };
-
-    Server     server     = FIELD("server");
-    Discovery  discovery  = FIELD("discovery");
-    Parameters parameters = FIELD("parameters");
-    Log        log        = FIELD("log");
-
-    META(Config, server, discovery, parameters, log)
-};
-#endif
-
-class Discovery
-{
 public:
     Discovery();
     ~Discovery();
 
+    bool init();
+
+    template <typename... T>
+    void runCommand(Command cmd, const T&... args);
 private:
     class Impl;
-    std::unique_ptr<Impl> m_impl;
 };
 
-#define DEFAULT_DUMPDATA_LOOP "2"
+std::string toString(Discovery::Command cmd);
+Discovery::Command fromString(const std::string& str);
 
-#define STATUS_STOPPED  1
-#define STATUS_FINISHED 2
-#define STATUS_PROGESS  3
-#define STATUS_STOPPING "STOPPING"
-#define STATUS_RUNNING  "RUNNING"
+template <typename... T>
+void Discovery::runCommand(Command cmd, const T&... args)
+{
+    write(ZMessage::create(toString(cmd), args...));
+}
 
 #define REQ_TERM       "$TERM"
 #define REQ_BIND       "BIND"
@@ -139,6 +86,15 @@ private:
 #define REQ_DONE       "DONE"
 #define REQ_FOUND      "FOUND"
 #define REQ_PROGRESS   "PROGRESS"
+
+#define DEFAULT_DUMPDATA_LOOP "2"
+
+#define STATUS_STOPPED  1
+#define STATUS_FINISHED 2
+#define STATUS_PROGESS  3
+#define STATUS_STOPPING "STOPPING"
+#define STATUS_RUNNING  "RUNNING"
+
 
 #define STREAM_CMD  "STREAM DELIVER"
 #define MAILBOX_CMD "MAILBOX DELIVER"

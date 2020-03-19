@@ -19,31 +19,42 @@
     =========================================================================
 */
 
-#ifndef DEVICE_SCAN_H_INCLUDED
-#define DEVICE_SCAN_H_INCLUDED
+#pragma once
+#include "wrappers/actor.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+/// Perform one IP address scan
+class DeviceScan: public ActorImpl
+{
+public:
+    DeviceScan();
+    void worker(zsock_t* sock) override;
+};
 
-//  @interface
+//#ifndef DEVICE_SCAN_H_INCLUDED
+//#define DEVICE_SCAN_H_INCLUDED
 
-//  Create a new device_scan
-FTY_DISCOVERY_PRIVATE zactor_t *
-    device_scan_new (zlist_t *arg0, discovered_devices_t *arg1, const fty::nut::KeyValues *mappings);
+//#ifdef __cplusplus
+//extern "C" {
+//#endif
 
-//  One device scan actor
-FTY_DISCOVERY_PRIVATE void
-    device_scan_actor (zsock_t *pipe, void *args);
+////  @interface
 
-//  Self test of this class
-FTY_DISCOVERY_PRIVATE void
-    device_scan_test (bool verbose);
+////  Create a new device_scan
+//FTY_DISCOVERY_PRIVATE zactor_t *
+//    device_scan_new (zlist_t *arg0, discovered_devices_t *arg1, const fty::nut::KeyValues *mappings);
 
-//  @end
+////  One device scan actor
+//FTY_DISCOVERY_PRIVATE void
+//    device_scan_actor (zsock_t *pipe, void *args);
 
-#ifdef __cplusplus
-}
-#endif
+////  Self test of this class
+//FTY_DISCOVERY_PRIVATE void
+//    device_scan_test (bool verbose);
 
-#endif
+////  @end
+
+//#ifdef __cplusplus
+//}
+//#endif
+
+//#endif

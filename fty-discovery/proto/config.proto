@@ -1,0 +1,59 @@
+syntax = "proto3";
+import "default-values.proto";
+
+message Config
+{
+    message Server
+    {
+        int32   timeout     = 1;
+        bool    background  = 2;
+        string  workdir     = 3;
+        bool    verbose     = 4;
+    }
+
+    message Discovery
+    {
+        enum Type
+        {
+            Unknown   = 0;
+            LocalScan = 1;
+            MultiScan = 2;
+            IpScan    = 3;
+        }
+
+        message Link
+        {
+            uint32 src  = 1;
+            uint32 type = 2;
+        }
+
+        Type                 type               = 1;
+        repeated string      scans              = 2;
+        repeated string      ips                = 3;
+        string               scanNumber         = 4;
+        string               ipNumber           = 5;
+        repeated string      documents          = 6;
+        map<string, string>  defaultValuesAux   = 7;
+        map<string, string>  defaultValuesExt   = 8;
+        repeated Link        defaultValuesLinks = 9;
+    }
+
+    message Parameters
+    {
+        string mappingFile       = 1;
+        int32  maxDumpPoolNumber = 2 [(int32_DefaultValue)=15];
+        int32  maxScanPoolNumber = 3 [(int32_DefaultValue)=4];
+        int32  nutScannerTimeOut = 4 [(int32_DefaultValue)=20];
+        int32  dumpDataLoopTime  = 5 [(int32_DefaultValue)=30];
+    }
+
+    message Log
+    {
+        string config = 1 [(string_DefaultValue)="/etc/fty/ftylog.cfg"];
+    }
+
+    Server     server = 1;
+    Discovery  discovery = 2;
+    Parameters parameters = 3;
+    Log        log = 4;
+}

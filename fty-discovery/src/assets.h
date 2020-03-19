@@ -19,43 +19,27 @@
     =========================================================================
 */
 
-#ifndef ASSETS_H_INCLUDED
-#define ASSETS_H_INCLUDED
+#pragma once
+#include "wrappers/ftyproto.h"
+#include <map>
+#include <string>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+typedef struct _fty_proto_t fty_proto_t;
 
-//  @interface
-//  Create a new assets
-FTY_DISCOVERY_PRIVATE assets_t *
-    assets_new (void);
+/// Cache of assets
+class Assets
+{
+public:
+    /// Put one asset into cache
+    void put(FtyProto&& msg);
 
-//  Destroy the assets
-FTY_DISCOVERY_PRIVATE void
-    assets_destroy (assets_t **self_p);
+    /// Find asset by ext attribute
+    const FtyProto* find(const std::string& key, const std::string& value) const;
 
-//  Put one asset into cache
-FTY_DISCOVERY_PRIVATE void
-    assets_put (assets_t *self, fty_proto_t **msg_p);
+    /// return the zclock_mono time in ms when last change happened (create or delete, not update)
+    int64_t lastChange() const;
 
-//  Find asset by ext attribute
-FTY_DISCOVERY_PRIVATE fty_proto_t *
-    assets_find (assets_t *self, const char *key, const char *value);
-
-//  return the zclock_mono time in ms when last change happened (create or
-//  delete, not update)
-FTY_DISCOVERY_PRIVATE int64_t
-    assets_last_change (assets_t *self);
-
-//  Self test of this class
-FTY_DISCOVERY_PRIVATE void
-    assets_test (bool verbose);
-
-//  @end
-
-#ifdef __cplusplus
-}
-#endif
-
-#endif
+private:
+    int64_t                         m_lastUpdate = 0;
+    std::map<std::string, FtyProto> m_map;
+};

@@ -27,6 +27,7 @@
 */
 
 #include "fty_discovery_classes.h"
+#include <fty/fty-log.h>
 
 //  Structure of our class
 

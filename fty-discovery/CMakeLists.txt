@@ -33,16 +33,21 @@ raven_target(exe ${PROJECT_NAME}
         src/range_scan.cc
         src/scan_dns.cc
         src/scan_nut.cc
+
         src/wrappers/mlm.cpp
         src/wrappers/mlm.h
         src/wrappers/zmessage.h
+        src/wrappers/actor.cpp
+        src/wrappers/actor.h
+        src/wrappers/ftyproto.cpp
+        src/wrappers/ftyproto.h
     USES
-        fty-common-logging
         pack
         libcidr
         libmlm
         libfty_proto
         libfty_common_db
+        fty-common-logging
 )
 
 

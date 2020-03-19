@@ -29,6 +29,7 @@
 #include "fty_discovery_classes.h"
 #include <fty/command-line.h>
 #include <fty/fty-log.h>
+#include "wrappers/zmessage.h"
 
 
 int main(int argc, char* argv[])
@@ -79,41 +80,36 @@ int main(int argc, char* argv[])
     logDbg() << "fty_discovery - range:" << (!range.empty() ? range : "none") << ", agent" << agent;
 
     Discovery server;
-
-    // configure actor
-    zactor_t* discovery_server = zactor_new(fty_discovery_server, NULL);
-    if (agent) {
-        zstr_sendx(discovery_server, REQ_BIND, FTY_DISCOVERY_ENDPOINT, FTY_DISCOVERY_ACTOR_NAME, NULL);
-    } else {
-        char* name = zsys_sprintf("%s.%i", FTY_DISCOVERY_ACTOR_NAME, getpid());
-        zstr_sendx(discovery_server, REQ_BIND, FTY_DISCOVERY_ENDPOINT, name, NULL);
-        zstr_free(&name);
+    if (!server.init()) {
+        return 1;
     }
-    zstr_sendx(discovery_server, REQ_CONFIG, config, NULL);
-    zstr_sendx(discovery_server, REQ_CONSUMER, FTY_PROTO_STREAM_ASSETS, ".*", NULL);
+
+    std::string name = Discovery::ActorName;
+    if (!agent) {
+        name += "."+ std::to_string(getpid());
+    }
+    server.runCommand(Discovery::Command::Bind, Discovery::Endpoint, name);
+    server.runCommand(Discovery::Command::Config, config);
+    server.runCommand(Discovery::Command::Consumer, FTY_PROTO_STREAM_ASSETS, ".*");
+
     if (!range.empty()) {
-        zstr_sendx(discovery_server, REQ_SCAN, range, NULL);
+        server.runCommand(Discovery::Command::Scan, range);
     } else if (!agent) {
-        zstr_sendx(discovery_server, REQ_LOCALSCAN, NULL);
+        server.runCommand(Discovery::Command::LocalScan);
     }
 
     // main loop
     while (!zsys_interrupted) {
-        zmsg_t* msg = zmsg_recv(discovery_server);
+        ZMessage msg = server.read();
         if (msg) {
-            char* cmd = zmsg_popstr(msg);
-            log_debug("main: %s command received", cmd ? cmd : "(null)");
+            auto cmd = msg.popStr();
+            logDbg() << "main:" << (cmd ? *cmd : "(null)") << "command received";
             if (cmd) {
-                if (!agent && streq(cmd, REQ_DONE)) {
-                    zstr_free(&cmd);
-                    zmsg_destroy(&msg);
+                if (!agent && *cmd == REQ_DONE) {
                     break;
                 }
-                zstr_free(&cmd);
             }
-            zmsg_destroy(&msg);
         }
     }
-    zactor_destroy(&discovery_server);
     return 0;
 }

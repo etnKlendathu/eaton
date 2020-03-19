@@ -31,6 +31,7 @@
 #include <cxxtools/split.h>
 #include <cxxtools/regex.h>
 #include <algorithm>
+#include <fty/fty-log.h>
 
 static const std::string SECW_SOCKET_PATH = "/run/fty-security-wallet/secw.socket";
 

@@ -29,7 +29,7 @@
 #include "fty_discovery_classes.h"
 
 #include <sys/socket.h>       /* for AF_INET */
-
+#include <fty/fty-log.h>
 
 bool
 scan_dns (fty_proto_t *msg, const char *address, zconfig_t */*config*/)

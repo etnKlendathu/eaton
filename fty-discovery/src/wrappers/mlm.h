@@ -14,6 +14,7 @@ class Mlm
 {
 public:
     Mlm();
+    ~Mlm();
 
     bool                   connect(const std::string& endpoint, uint32_t timeout, const std::string& address);
     fty::Expected<int>     sendto(const std::string& address, const std::string& subject,

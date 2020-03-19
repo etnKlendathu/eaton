@@ -30,6 +30,10 @@ Mlm::Mlm()
 {
 }
 
+Mlm::~Mlm()
+{
+}
+
 bool Mlm::connect(const std::string& endpoint, uint32_t timeout, const std::string& address)
 {
     return mlm_client_connect(m_impl->m_client.get(), endpoint.c_str(), timeout, address.c_str()) >= 0;
