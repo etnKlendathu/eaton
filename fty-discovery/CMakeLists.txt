@@ -16,7 +16,6 @@ raven_target(exe ${PROJECT_NAME}
     PUBLIC
         include/fty_discovery.h
         include/fty_discovery_library.h
-        include/fty_discovery_server.h
 
     SOURCES
         src/assets.cc
@@ -30,17 +29,20 @@ raven_target(exe ${PROJECT_NAME}
         src/cidr.h
         src/device_scan.h
         src/fty_discovery_server.cc
+        src/fty_discovery_server.h
         src/range_scan.cc
         src/scan_dns.cc
         src/scan_nut.cc
+        src/commands.h
 
         src/wrappers/mlm.cpp
         src/wrappers/mlm.h
         src/wrappers/zmessage.h
-        src/wrappers/actor.cpp
         src/wrappers/actor.h
         src/wrappers/ftyproto.cpp
         src/wrappers/ftyproto.h
+        src/wrappers/poller.cpp
+        src/wrappers/poller.h
     USES
         pack
         libcidr

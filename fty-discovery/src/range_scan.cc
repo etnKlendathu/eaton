@@ -19,224 +19,103 @@
     =========================================================================
 */
 
-/*
-@header
-    range_scan - Perform one range scan
-@discuss
-@end
-*/
-
-#include "fty_discovery_classes.h"
+#include "range_scan.h"
+#include "cidr.h"
+#include "device_scan.h"
 #include <fty/fty-log.h>
+#include <fty/split.h>
+#include "commands.h"
+#include "wrappers/poller.h"
 
-//  Structure of our class
-
-struct _range_scan_t {
-    char *range;
-    int64_t size;
-    int64_t cursor;
-};
-
-
-//  --------------------------------------------------------------------------
-//  Create a new range_scan
-
-range_scan_t *
-range_scan_new (const char *range)
+RangeScan::RangeScan(const std::string& range)
+    : m_range(range)
 {
-    assert (range);
-    range_scan_t *self = (range_scan_t *) zmalloc (sizeof (range_scan_t));
-    assert (self);
-    //  Initialize class properties here
-    self->range = strdup (range);
-    const char *p = strchr (range, '/');
-    if (p) {
-        ++p;
-        int prefix = atoi (p);
-        if (prefix <= 32) {
-            self->size = 1 << (32 - prefix);
-        }
-        self->cursor = 0;
-    }
-    return self;
-}
-
-//  --------------------------------------------------------------------------
-//  report progress in % (0 - 100);
-
-int
-range_scan_progress (range_scan_t *self)
-{
-    int result = self->cursor * 100 / self->size;
-    if (result > 100) result = 100;
-    return result;
-}
-
-//  --------------------------------------------------------------------------
-//  Returns current scanning range (cidr format)
-
-const char *
-range_scan_range (range_scan_t *self)
-{
-    return self->range;
-}
-
-//  --------------------------------------------------------------------------
-//  Destroy the range_scan
-
-void
-range_scan_destroy (range_scan_t **self_p)
-{
-    assert (self_p);
-    if (*self_p) {
-        range_scan_t *self = *self_p;
-        //  Free class properties here
-        zstr_free (&self->range);
-        //  Free object itself
-        free (self);
-        *self_p = NULL;
+    auto [_, prefix] = fty::split<std::string, int>(m_range, "/");
+    if (prefix <= 32) {
+        m_size = 1 << (32 - prefix);
     }
 }
 
-void
-range_scan_actor (zsock_t *pipe, void *args)
+void RangeScan::run(const Ranges& ranges, const std::map<std::string, std::string>& devices,
+    const fty::nut::KeyValues& nutMapping)
 {
-    zsock_signal (pipe, 0);
-    range_scan_args_t *params;
-    discovered_devices_t *params2;
-    const fty::nut::KeyValues *mappings;
-    zlist_t *argv;
-    {
-        // args check
-        if (! args ) {
-            log_error ("Scanning params not defined!");
-            zstr_send (pipe, REQ_DONE);
-            return;
-        }
-        argv = (zlist_t *) args;
-        if(! argv || zlist_size(argv) != 3) {
-            log_error ("Error in parameters");
-            zstr_send (pipe, REQ_DONE);
-            zlist_destroy(&argv);
-            return;
-        }
-        params = (range_scan_args_t *) zlist_first(argv);
-        params2 = (discovered_devices_t *) zlist_next(argv);
-        mappings = (const fty::nut::KeyValues *) zlist_next(argv);
-        if (! params || (params->ranges.size() < 1) || !params->config.empty() || !params2) {
-            log_error ("Scanning range not defined!");
-            zstr_send (pipe, REQ_DONE);
-            zlist_destroy(&argv);
-            return;
-        }
+    Finisher finisher([&]() {
+        write(discovery::Command::Done);
+    });
 
-        for(auto range: params->ranges) {
-            CIDRAddress addrcheck (range.first);
-            if (!addrcheck.valid ()) {
-                log_error ("Address range (%s) is not valid!", range.first.c_str());
-                zstr_send (pipe, REQ_DONE);
-                zlist_destroy(&argv);
-                return;
-            }
-            if (addrcheck.protocol () != 4) {
-                log_error ("Scanning is not supported for such range (%s)!", range.first.c_str());
-                zstr_send (pipe, REQ_DONE);
-                zlist_destroy(&argv);
-                return;
-            }
+    zsock_signal(pipe(), 0);
+
+    if (ranges.size() < 1) {
+        return;
+    }
+
+    for (auto range : ranges) {
+        CIDRAddress addrcheck(range.first);
+        if (!addrcheck.valid()) {
+            logError() << "Address range (" << range.first << ") is not valid!";
+            return;
+        }
+        if (addrcheck.protocol() != 4) {
+            logError() << "Scanning is not supported for such range (" << range.first << ")!";
+            return;
         }
     }
 
-    zlist_t *listScans = zlist_new();
-    for(auto range : params->ranges) {
-        CIDRList *list = new CIDRList();
+    std::vector<CIDRList> scans;
+    for (auto range : ranges) {
+        CIDRList list;
         CIDRAddress addr;
         CIDRAddress addrDest;
 
-        if(!range.second.empty()) {
+        if (!range.second.empty()) {
             CIDRAddress addr_network(range.first);
-            list->add(addr_network.network());
+            list.add(addr_network.network());
+        } else {
+            // real range and not subnetwork, need to scan all ips
+            CIDRAddress addrStart(range.first);
+            list.add(addrStart.host());
+            addrDest = CIDRAddress(range.second);
+            list.add(addrDest.host());
         }
-        else {
-            //real range and not subnetwork, need to scan all ips
-           CIDRAddress addrStart(range.first);
-           list->add(addrStart.host());
-           addrDest = CIDRAddress(range.second);
-           list->add(addrDest.host());
-        }
-        zlist_append(listScans, list);
+        scans.push_back(list);
     }
 
-    zactor_t *device_actor = device_scan_new(listScans, params2, mappings);
-    zpoller_t *poller = zpoller_new (pipe, device_actor, NULL);
+    DeviceScan scan;
+    scan.run(scans, devices, nutMapping);
 
-    zstr_sendx (device_actor, "SCAN", NULL);
+    Poller poll(this, &scan);
 
-    while (!zsys_interrupted) {
-        void *which = zpoller_wait (poller, 1000);
-        if (which == pipe) {
-            zmsg_t *msg = zmsg_recv (pipe);
-            if (msg) {
-                char *cmd = zmsg_popstr (msg);
-                if (cmd) {
-                    if (streq (cmd, "$TERM")) {
-                        zstr_free (&cmd);
-                        zactor_destroy (&device_actor);
-                        zmsg_destroy (&msg);
-                        break;
-                    }
-                    zstr_free (&cmd);
-                }
-                zmsg_destroy (&msg);
-            }
+    scan.write(discovery::Command::Scan);
+
+    while(true) {
+        auto channel = poll.wait(1000);
+        if (!channel) {
+            logError() << channel.error();
+            break;
         }
-        else if (which == NULL){
-            // timeout
+
+        if (!*channel) {
+            // Timeout
+            continue;
         }
-        else {
-            // from device actor
-            zmsg_t *msg = zmsg_recv (which);
-            if (msg) {
-                zmsg_print (msg);
-                char *cmd = zmsg_popstr(msg);
-                if(streq (cmd, REQ_DONE)) {
-                    zstr_free(&cmd);
-                    zmsg_destroy(&msg);
+
+        if (*channel == this) {
+            if (ZMessage msg = read()) {
+                discovery::Command cmd = fty::convert<discovery::Command>(*msg.popStr());
+                if (cmd == discovery::Command::Term) {
                     break;
                 }
-                zstr_free(&cmd);
-                zmsg_pushstr(msg, "FOUND");
-                zmsg_send (&msg, pipe);
-                zmsg_destroy (&msg);
-            } else {
-                // strange failure
-                break;
+            }
+        } else if (*channel == &scan) {
+            if (ZMessage msg = scan.read()) {
+                discovery::Command cmd = fty::convert<discovery::Command>(*msg.popStr());
+                if (cmd == discovery::Command::Done) {
+                    break;
+                }
+                msg.prependStr(fty::convert<std::string>(discovery::Command::Found));
+                send(std::move(msg));
             }
         }
     }
-    params->ranges.clear();
-    zlist_destroy(&argv);
-    zactor_destroy (&device_actor);
-    zpoller_destroy(&poller);
-    zstr_send (pipe, REQ_DONE);
 }
 
-//  --------------------------------------------------------------------------
-//  Self test of this class
-
-void
-range_scan_test (bool /*verbose*/)
-{
-    printf (" * range_scan: ");
-
-    //  @selftest
-    //  Simple create/destroy test
-    range_scan_t *self = range_scan_new ("127.0.0.0/24");
-    assert (self);
-    assert (self->size == 256);
-    self->cursor = 128;
-    assert (range_scan_progress (self) == 50);
-    range_scan_destroy (&self);
-    //  @end
-    printf ("OK\n");
-}

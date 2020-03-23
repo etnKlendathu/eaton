@@ -19,246 +19,136 @@
     =========================================================================
 */
 
+#include "device_scan.h"
+#include "commands.h"
+#include "fty_discovery_server.h"
+#include "scan_nut.h"
+#include "wrappers/poller.h"
 #include <algorithm>
+#include <czmq.h>
 #include <fty/fty-log.h>
 
-bool device_scan_scan (zlist_t *listScans, discovered_devices_t *devices, zsock_t *pipe, const fty::nut::KeyValues *mappings, const std::set<std::string> &documentIds)
+bool DeviceScan::scanDevices(const std::vector<CIDRList>& list,
+    const std::map<std::string, std::string>& devices, const fty::nut::KeyValues& nutMapping,
+    const pack::StringList& docs)
 {
-    CIDRList *listAddr = (CIDRList *) zlist_first(listScans);
-    zpoller_t *poller = zpoller_new(pipe, nullptr);
-    std::vector<zactor_t *> listActor;
-    bool term = false;
-    while(listAddr != nullptr) {
-        zlist_t *args = zlist_new();
-        zlist_append(args, listAddr);
-        zlist_append(args, devices);
-        zlist_append(args, const_cast<void*>(static_cast<const void*>(mappings)));
-        zlist_append(args, const_cast<void*>(static_cast<const void*>(&documentIds)));
-        zactor_t *scan_nut = zactor_new (scan_nut_actor, args);
-        zpoller_add(poller, scan_nut);
-        listActor.push_back(scan_nut);
-        listAddr = (CIDRList *) zlist_next(listScans);
+    std::vector<ScanNut> actors;
+    Poller               poll(this);
+    for (const auto& toScan : list) {
+        ScanNut& actor = actors.emplace_back();
+        actor.run(toScan, devices, nutMapping, docs);
+        poll.add(&actor);
     }
 
+    bool   term             = false;
     size_t number_end_actor = 0;
 
     while (!zsys_interrupted) {
-        void *which = zpoller_wait (poller, 5000);
-        if (which == pipe) {
-            zmsg_t *msg = zmsg_recv (pipe);
-            if(msg) {
-                char *cmd = zmsg_popstr (msg);
-                if(cmd) {
-                    if(streq (cmd, "$TERM")) {
-                        zstr_free(&cmd);
-                        zmsg_destroy (&msg);
-                        term = true;
-                        break;
-                    }
-                    zstr_free(&cmd);
+        fty::Expected<IActor*> which = poll.wait(5000);
+        if (!which) {
+            break;
+        }
+
+        if (!*which) {
+            // timeout
+            continue;
+        }
+
+        if (*which == this) {
+            if (ZMessage msg = read()) {
+                auto cmd = fty::convert<discovery::Command>(*msg.popStr());
+                if (cmd == discovery::Command::Term) {
+                    term = true;
+                    break;
                 }
-                zmsg_destroy (&msg);
             }
-        } else if (which == nullptr) {
-            //time out, nothing to do
-        }else { //any of scan_nut_actor
-            zmsg_t *msg = zmsg_recv (which);
-            if (msg) {
-                char *cmd = zmsg_popstr (msg);
-                if (cmd) {
-                    if (streq (cmd, "$TERM")) {
-                        zstr_free (&cmd);
-                        zmsg_destroy (&msg);
-                        break;
-                    } else if (streq (cmd, REQ_DONE)) {
-                        zstr_free (&cmd);
-                        zmsg_destroy (&msg);
-                        auto end_actor = std::find(listActor.begin(), listActor.end(), (zactor_t *) which );
-                        if (end_actor == listActor.end()) {
-                            //ERROR ? Normaly can't happened
-                            log_error("%s Error : actor not in the actor list", __FUNCTION__);
-                        } else {
-                            listActor.erase(end_actor);
-                        }
-                        zpoller_remove(poller, which);
-                        zactor_destroy((zactor_t **)&which);
-                        if(listActor.empty())
-                            break;
-                        else if(number_end_actor >= listActor.size()) {
-                            for(auto actor : listActor) {
-                                zmsg_t* msg_cont = zmsg_new();
-                                zmsg_pushstr(msg_cont, CMD_CONTINUE);
-                                zmsg_send(&msg_cont, actor);
-                            }
-                            number_end_actor = 0;
-                        }
-                    } else if (streq (cmd, INFO_READY)) {
-                        number_end_actor++;
-                        if(number_end_actor >= listActor.size()) {
-                            for(auto actor : listActor) {
-                                zmsg_t* msg_cont = zmsg_new();
-                                zmsg_pushstr(msg_cont, CMD_CONTINUE);
-                                zmsg_send(&msg_cont, actor);
-                            }
-                            number_end_actor = 0;
-                        }
-                        zstr_free (&cmd);
-                        zmsg_destroy (&msg);
-                    } else if(streq (cmd, REQ_FOUND)) {
-                        zmsg_t *reply = zmsg_dup(msg);
-                        zmsg_pushstr(reply, REQ_FOUND);
-                        zmsg_send (&reply, pipe);
-                        zstr_free (&cmd);
-                    }
-                    zstr_free (&cmd);
+        } else {
+            // any of scan_nut_actor
+            ZMessage msg = (*which)->read();
+            if (!msg) {
+                continue;
+            }
+
+            auto cmd = fty::convert<discovery::Command>(*msg.popStr());
+            if (cmd == discovery::Command::Term) {
+                break;
+            } else if (cmd == discovery::Command::Done) {
+                poll.remove(*which);
+                auto actorIt = std::find(actors.begin(), actors.end(), **which);
+                if (actorIt == actors.end()) {
+                    // ERROR ? Normaly can't happened
+                    logError() << __FUNCTION__ << "Error : actor not in the actor list";
+                } else {
+                    actors.erase(actorIt);
                 }
-                zmsg_destroy (&msg);
+
+                if (actors.empty()) {
+                    break;
+                } else if (number_end_actor >= actors.size()) {
+                    for (auto& actor : actors) {
+                        actor.write(discovery::Command::Continue);
+                    }
+                    number_end_actor = 0;
+                }
+            } else if (cmd == discovery::Command::InfoReady) {
+                number_end_actor++;
+                if (number_end_actor >= actors.size()) {
+                    for (auto& actor : actors) {
+                        actor.write(discovery::Command::Continue);
+                    }
+                    number_end_actor = 0;
+                }
+            } else if (cmd == discovery::Command::Found) {
+                msg.prependStr(fty::convert<std::string>(discovery::Command::Found));
+                send(std::move(msg));
             }
         }
     }
 
-    for(auto actor : listActor) {
-        zactor_destroy(&actor);
-    }
-
-    listActor.clear();
-    zlist_destroy(&listScans);
-    log_debug("QUIT device scan scan");
-    zpoller_destroy (&poller);
+    logDbg() << "QUIT device scan scan";
     return term;
 }
 
 //  --------------------------------------------------------------------------
 //  One device scan actor
 
-void
-device_scan_actor (zsock_t *pipe, void *args)
+void DeviceScan::run(const std::vector<CIDRList>& list, const std::map<std::string, std::string>& devices,
+    const fty::nut::KeyValues& nutMapping)
 {
-    zsock_signal (pipe, 0);
-    if (! args ) {
-        log_error ("dsa: actor created without parameters");
-        return;
-    }
+    zsock_signal(pipe(), 0);
 
-    zlist_t *argv = (zlist_t *)args;
 
-    if (!argv || zlist_size(argv) != 3) {
-        log_error ("dsa: actor created without config");
-        zlist_destroy(&argv);
-        return;
-    }
-    zlist_t *listScans = (zlist_t *) zlist_first(argv);
-    if(zlist_size(listScans) < 1) {
-        log_error ("dsa: actor created without any scans");
-        zlist_destroy(&argv);
-        zlist_destroy(&listScans);
-        return;
-    }
-    discovered_devices_t *devices = (discovered_devices_t*) zlist_next(argv);
-    const fty::nut::KeyValues *mappings = (const fty::nut::KeyValues*) zlist_next(argv);
-
-    log_debug ("dsa: device scan actor created");
+    logDbg() << "dsa: device scan actor created";
     while (!zsys_interrupted) {
-        zmsg_t *msg = zmsg_recv (pipe);
-        if (msg) {
-            char *cmd = zmsg_popstr (msg);
-            if (streq (cmd, "$TERM")) {
-                zstr_free (&cmd);
-                break;
-            }
-            else if (streq (cmd, "SCAN")) {
-                zstr_free (&cmd);
-                zmsg_destroy(&msg);
+        ZMessage msg = read();
+        if (!msg) {
+            continue;
+        }
 
-                Config& conf = discoveryConfig();
-                const int number_max_pool = conf.parameters.maxScanPoolNumber;
-                std::set<std::string> documentIds;
-                for (const auto& doc: conf.discovery.documents) {
-                    documentIds.emplace(doc);
-                }
+        auto cmd = fty::convert<discovery::Command>(*msg.popStr());
+        if (cmd == discovery::Command::Term) {
+            break;
+        } else if (cmd == discovery::Command::Scan) {
+            Config& conf = discoveryConfig();
 
-                bool stopped = false;
-                while(!stopped && zlist_size(listScans) > 0) {
-                    int number_of_scans = 0;
-                    zlist_t *scanPool = zlist_new();
-                    while(number_of_scans < number_max_pool && zlist_size(listScans) > 0) {
-                        zlist_append(scanPool, zlist_pop(listScans));
-                        number_of_scans++;
+            const int             numberMaxPool = conf.parameters.maxScanPoolNumber;
+            std::vector<CIDRList> pool;
+            for (const auto& scan : list) {
+                pool.push_back(scan);
+                if (int(pool.size()) == numberMaxPool) {
+                    if (!scanDevices(pool, devices, nutMapping, conf.discovery.documents)) {
+                        pool.clear();
+                        break;
                     }
-                    stopped = device_scan_scan(scanPool, devices, pipe, mappings, documentIds);
                 }
-                zlist_destroy(&listScans);
-
-                zmsg_t *end = zmsg_new();
-                zmsg_pushstr(end, REQ_DONE);
-                zmsg_send(&end, pipe);
-                break;
             }
-            zmsg_destroy (&msg);
+            if (!pool.empty()) {
+                scanDevices(pool, devices, nutMapping, conf.discovery.documents);
+            }
+
+            write(discovery::Command::Done);
+            break;
         }
     }
-    log_debug ("dsa: device scan actor exited");
-    zlist_destroy(&argv);
-}
-
-
-//  --------------------------------------------------------------------------
-//  Create a new device_scan actor
-
-zactor_t *
-device_scan_new (zlist_t *arg0, discovered_devices_t *arg1, const fty::nut::KeyValues *mappings)
-{
-    zlist_t *args = zlist_new();
-    zlist_append(args, arg0);
-    zlist_append(args, arg1);
-    zlist_append(args, const_cast<void*>(static_cast<const void*>(mappings)));
-    return zactor_new (device_scan_actor, (void *)args);
-}
-
-
-//  --------------------------------------------------------------------------
-//  Self test of this class
-
-void
-device_scan_test (bool /*verbose*/)
-{
-    printf (" * device_scan: ");
-
-    //  @selftest
-    //  Simple create/destroy test
-
-    // Note: If your selftest reads SCMed fixture data, please keep it in
-    // src/selftest-ro; if your test creates filesystem objects, please
-    // do so under src/selftest-rw. They are defined below along with a
-    // usecase (asert) to make compilers happy.
-    const char *SELFTEST_DIR_RO = "src/selftest-ro";
-    const char *SELFTEST_DIR_RW = "src/selftest-rw";
-    assert (SELFTEST_DIR_RO);
-    assert (SELFTEST_DIR_RW);
-    // Uncomment these to use C++ strings in C++ selftest code:
-    //std::string str_SELFTEST_DIR_RO = std::string(SELFTEST_DIR_RO);
-    //std::string str_SELFTEST_DIR_RW = std::string(SELFTEST_DIR_RW);
-    //assert ( (str_SELFTEST_DIR_RO != "") );
-    //assert ( (str_SELFTEST_DIR_RW != "") );
-    // NOTE that for "char*" context you need (str_SELFTEST_DIR_RO + "/myfilename").c_str()
-
-    zactor_t *self = device_scan_new(nullptr, nullptr, nullptr);
-    assert (self);
-
-    // zconfig /etc/default/fty.cfg
-    // snmp
-    //    community
-    //        0 = "public"
-    zconfig_t *cfg = zconfig_new ("root", nullptr);
-    zconfig_put (cfg, "/snmp/community/0", "public");
-    zconfig_put (cfg, "/snmp/community/1", "private");
-
-    // TODO
-    //zmsg_t *msg = device_scan_scan ("10.231.107.40", cfg, nullptr);
-    //zmsg_destroy (&msg);
-
-    zconfig_destroy (&cfg);
-    zactor_destroy (&self);
-    //  @end
-    printf ("OK\n");
+    logDbg() << "dsa: device scan actor exited";
 }

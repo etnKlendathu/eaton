@@ -26,7 +26,6 @@
 @end
  */
 
-#include "fty_discovery_classes.h"
 #include "wrappers/mlm.h"
 #include "wrappers/zmessage.h"
 #include <ctime>
@@ -38,10 +37,12 @@
 #include <string>
 #include <sys/types.h>
 #include <vector>
+#include "fty_discovery_server.h"
+#include "cidr.h"
 
 Config& discoveryConfig()
 {
-    static Config cfg = pack::zconfig::deserializeFile<Config>(FTY_DISCOVERY_CFG_FILE);
+    static Config cfg = pack::zconfig::deserializeFile<Config>(Discovery::CfgFile);
     return cfg;
 }
 
@@ -320,12 +321,12 @@ void fty_discovery_server_destroy(fty_discovery_server_t** self_p)
 }
 #endif
 
-class Discovery::Impl : public ActorImpl
+class Discovery::Impl : public Actor
 {
 public:
     void worker(zsock_t* sock) override
     {
-        zpoller_t*              poller = zpoller_new(sock, m_mlm.msgpipe(), nullptr);
+        zpoller_t* poller = zpoller_new(sock, m_mlm.msgpipe(), nullptr);
         zsock_signal(sock, 0);
         zmsg_t* range_stack = zmsg_new();
 
@@ -354,8 +355,9 @@ public:
             if (m_rangeScanConfig.ranges.size() > 0 && !m_rangeScanner) {
                 if (zclock_mono() - m_assets.lastChange() > 5000) {
                     // no asset change for last 5 secs => we can start range scan
-//                    log_debug("Range scanner start for %s with config file %s",
-//                        m_rangeScanConfig.ranges.front().first, m_rangeScanConfig.config);
+                    //                    log_debug("Range scanner start for %s with config file %s",
+                    //                        m_rangeScanConfig.ranges.front().first,
+                    //                        m_rangeScanConfig.config);
                     // create range scanner
                     // TODO: send list of IPs to skip
                     reset();
@@ -1069,6 +1071,8 @@ private:
 
     zactor_t* rangeScannerNew()
     {
+        RangeScan scan;
+        scan.init(m_devicesDiscovered, m_nutMappingInventory);
         zlist_t* args = zlist_new();
         zlist_append(args, &m_rangeScanConfig);
         zlist_append(args, &m_devicesDiscovered);
@@ -1077,26 +1081,26 @@ private:
     }
 
 private:
-    Mlm                      m_mlm;
-    Mlm                      m_mlmCreate;
-    Assets                   m_assets;
-    int64_t                  m_nbPercent;
-    int64_t                  m_nbDiscovered;
-    int64_t                  m_scanSize;
-    int64_t                  m_nbUpsDiscovered;
-    int64_t                  m_nbEpduDiscovered;
-    int64_t                  m_nbStsDiscovered;
-    int32_t                  m_statusScan;
-    bool                     m_ongoingStop;
-    std::vector<std::string> m_localScanSubScan;
-    range_scan_args_t        m_rangeScanConfig;
-    configuration_scan_t     m_configurationScan;
-    zactor_t*                m_rangeScanner;
-    std::string              m_percent;
-    discovered_devices_t     m_devicesDiscovered;
-    fty::nut::KeyValues      m_nutMappingInventory;
-    std::vector<link_t>      m_defaultValuesLinks;
-    Config                   m_config;
+    Mlm                                m_mlm;
+    Mlm                                m_mlmCreate;
+    Assets                             m_assets;
+    int64_t                            m_nbPercent;
+    int64_t                            m_nbDiscovered;
+    int64_t                            m_scanSize;
+    int64_t                            m_nbUpsDiscovered;
+    int64_t                            m_nbEpduDiscovered;
+    int64_t                            m_nbStsDiscovered;
+    int32_t                            m_statusScan;
+    bool                               m_ongoingStop;
+    std::vector<std::string>           m_localScanSubScan;
+    range_scan_args_t                  m_rangeScanConfig;
+    configuration_scan_t               m_configurationScan;
+    zactor_t*                          m_rangeScanner;
+    std::string                        m_percent;
+    std::map<std::string, std::string> m_devicesDiscovered;
+    fty::nut::KeyValues                m_nutMappingInventory;
+    std::vector<link_t>                m_defaultValuesLinks;
+    Config                             m_config;
 };
 
 Discovery::Discovery()
@@ -1113,70 +1117,6 @@ bool Discovery::init()
     return m_impl->init();
 }
 
-std::string toString(Discovery::Command cmd)
-{
-    switch (cmd) {
-        case Discovery::Command::Bind:
-            return "BIND";
-        case Discovery::Command::Done:
-            return "DONE";
-        case Discovery::Command::Scan:
-            return "SCAN";
-        case Discovery::Command::Term:
-            return "$TERM";
-        case Discovery::Command::Found:
-            return "FOUND";
-        case Discovery::Command::Config:
-            return "CONFIG";
-        case Discovery::Command::Consumer:
-            return "CONSUMER";
-        case Discovery::Command::Progress:
-            return "PROGRESS";
-        case Discovery::Command::StopScan:
-            return "STOPSCAN";
-        case Discovery::Command::GetConfig:
-            return "GETCONFIG";
-        case Discovery::Command::LocalScan:
-            return "LOCALSCAN";
-        case Discovery::Command::Republish:
-            return "REPUBLISH";
-        case Discovery::Command::SetConfig:
-            return "SETCONFIG";
-        case Discovery::Command::LaunchScan:
-            return "LAUNCHSCAN";
-    }
-}
-
 Discovery::Command fromString(const std::string& str)
 {
-    if (str == "BIND") {
-        return Discovery::Command::Bind;
-    } else if (str == "DONE") {
-        return Discovery::Command::Done;
-    } else if (str == "SCAN") {
-        return Discovery::Command::Scan;
-    } else if (str == "$TERM") {
-        return Discovery::Command::Term;
-    } else if (str == "FOUND") {
-        return Discovery::Command::Found;
-    } else if (str == "CONFIG") {
-        return Discovery::Command::Config;
-    } else if (str == "CONSUMER") {
-        return Discovery::Command::Consumer;
-    } else if (str == "PROGRESS") {
-        return Discovery::Command::Progress;
-    } else if (str == "STOPSCAN") {
-        return Discovery::Command::StopScan;
-    } else if (str == "GETCONFIG") {
-        return Discovery::Command::GetConfig;
-    } else if (str == "LOCALSCAN") {
-        return Discovery::Command::LocalScan;
-    } else if (str == "REPUBLISH") {
-        return Discovery::Command::Republish;
-    } else if (str == "SETCONFIG") {
-        return Discovery::Command::SetConfig;
-    } else if (str == "LAUNCHSCAN") {
-        return Discovery::Command::LaunchScan;
-    }
-    throw std::runtime_error(str + " is wrong command");
 }

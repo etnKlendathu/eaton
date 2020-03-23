@@ -41,6 +41,11 @@ public:
         zmsg_addstr(m_message.get(), str.c_str());
     }
 
+    void prependStr(const std::string& str)
+    {
+        zmsg_pushstr(m_message.get(), str.c_str());
+    }
+
     void print() const
     {
         zmsg_print(m_message.get());

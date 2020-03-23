@@ -128,7 +128,7 @@ public:
     void            append(const CppType& value);
     void            append(CppType&& value);
 
-    bool           find(const CppType& func);
+    bool           find(const CppType& func) const;
     bool           remove(const CppType& toRemove);
     const CppType& operator[](int index) const;
     void           clear() override;
@@ -358,7 +358,7 @@ void ValueList<ValType>::append(CppType&& value)
 }
 
 template <Type ValType>
-bool ValueList<ValType>::find(const CppType& val)
+bool ValueList<ValType>::find(const CppType& val) const
 {
     if (auto it = std::find(m_value.begin(), m_value.end(), val)) {
         return true;

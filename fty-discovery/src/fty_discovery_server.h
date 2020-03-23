@@ -25,30 +25,14 @@
 #include "src/wrappers/zmessage.h"
 #include <memory>
 #include <pack/pack.h>
+#include "commands.h"
 
-class Discovery : public Actor
+class Discovery : public Actor<Discovery>
 {
 public:
     static constexpr const char* Endpoint  = "ipc://@/malamute";
     static constexpr const char* ActorName = "fty-discovery";
-
-    enum class Command
-    {
-        Term,
-        Bind,
-        Consumer,
-        Republish,
-        Scan,
-        LocalScan,
-        SetConfig,
-        GetConfig,
-        Config,
-        LaunchScan,
-        Progress,
-        StopScan,
-        Done,
-        Found,
-    };
+    static constexpr const char* CfgFile   ="/etc/fty-discovery/fty-discovery.cfg";
 
 public:
     Discovery();
@@ -57,18 +41,15 @@ public:
     bool init();
 
     template <typename... T>
-    void runCommand(Command cmd, const T&... args);
+    void runCommand(discovery::Command cmd, const T&... args);
 private:
     class Impl;
 };
 
-std::string toString(Discovery::Command cmd);
-Discovery::Command fromString(const std::string& str);
-
 template <typename... T>
-void Discovery::runCommand(Command cmd, const T&... args)
+void Discovery::runCommand(discovery::Command cmd, const T&... args)
 {
-    write(ZMessage::create(toString(cmd), args...));
+    write(ZMessage::create(convert<std::string>(cmd), args...));
 }
 
 #define REQ_TERM       "$TERM"

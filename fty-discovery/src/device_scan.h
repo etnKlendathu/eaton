@@ -20,41 +20,21 @@
 */
 
 #pragma once
+#include "cidr.h"
+#include "config.h"
 #include "wrappers/actor.h"
+#include <fty_common_nut_types.h>
+
 
 /// Perform one IP address scan
-class DeviceScan: public ActorImpl
+class DeviceScan : public Actor<DeviceScan>
 {
 public:
     DeviceScan();
-    void worker(zsock_t* sock) override;
+    void run(const std::vector<CIDRList>& list, const std::map<std::string, std::string>& devices,
+        const fty::nut::KeyValues& nutMapping);
+
+private:
+    bool scanDevices(const std::vector<CIDRList>& list, const std::map<std::string, std::string>& devices,
+        const fty::nut::KeyValues& nutMapping, const pack::StringList& docs);
 };
-
-//#ifndef DEVICE_SCAN_H_INCLUDED
-//#define DEVICE_SCAN_H_INCLUDED
-
-//#ifdef __cplusplus
-//extern "C" {
-//#endif
-
-////  @interface
-
-////  Create a new device_scan
-//FTY_DISCOVERY_PRIVATE zactor_t *
-//    device_scan_new (zlist_t *arg0, discovered_devices_t *arg1, const fty::nut::KeyValues *mappings);
-
-////  One device scan actor
-//FTY_DISCOVERY_PRIVATE void
-//    device_scan_actor (zsock_t *pipe, void *args);
-
-////  Self test of this class
-//FTY_DISCOVERY_PRIVATE void
-//    device_scan_test (bool verbose);
-
-////  @end
-
-//#ifdef __cplusplus
-//}
-//#endif
-
-//#endif

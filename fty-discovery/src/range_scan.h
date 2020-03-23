@@ -19,39 +19,23 @@
     =========================================================================
 */
 
-#ifndef RANGE_SCAN_H_INCLUDED
-#define RANGE_SCAN_H_INCLUDED
-#include <string>
-#include <vector>
+#pragma once
+#include "wrappers/actor.h"
+#include <fty_common_nut_types.h>
 
-struct range_scan_args_t
+/// Perform one range scan
+class RangeScan : public Actor<RangeScan>
 {
-    std::vector<std::pair<std::string, std::string>> ranges;
-    std::string                                      config;
+public:
+    using Ranges = std::vector<std::pair<std::string, std::string>>;
+
+public:
+    RangeScan(const std::string& range);
+    void run(const Ranges& ranges, const std::map<std::string, std::string>& devices,
+        const fty::nut::KeyValues& nutMapping);
+
+private:
+    std::string m_range;
+    int64_t     m_size   = 0;
+    int64_t     m_cursor = 0;
 };
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-
-//  Create a new range_scan
-range_scan_t* range_scan_new(const char* range);
-
-//   the range_scan
-FTY_DISCOVERY_PRIVATE void range_scan_destroy(range_scan_t** self_p);
-
-//  report progress in % (0 - 100);
-int range_scan_progress(range_scan_t* self);
-
-//  Actor for range scan
-void range_scan_actor(zsock_t* pipe, void* args);
-
-//  Self test of this class
-void range_scan_test(bool verbose);
-
-#ifdef __cplusplus
-}
-#endif
-
-#endif
