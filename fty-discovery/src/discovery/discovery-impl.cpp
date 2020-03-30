@@ -171,10 +171,10 @@ void Discovery::Impl::runWorker()
             }
         } else if (*which == &m_mlm) {
             if (auto message = m_mlm.read()) {
-                std::string command = m_mlm.command();
-                if (command == STREAM_CMD) {
+                discovery::Deliver command = fty::convert<discovery::Deliver>(m_mlm.command());
+                if (command == discovery::Deliver::Stream) {
                     handleStream(std::move(message));
-                } else if (command == MAILBOX_CMD) {
+                } else if (command == discovery::Deliver::MailBox) {
                     handleMailbox(std::move(message), poll);
                 }
             }
@@ -293,11 +293,8 @@ void Discovery::Impl::configureLocalScan()
     }
 }
 
-bool Discovery::Impl::computeConfigurationFile(const std::string& config)
+bool Discovery::Impl::computeConfigurationFile()
 {
-    m_config.clear();
-    pack::zconfig::deserializeFile(config, m_config);
-
     m_defaultValuesLinks.clear();
     for (const auto& val : m_config.discovery.defaultValuesLinks) {
         link_t l;
@@ -316,10 +313,10 @@ bool Discovery::Impl::computeConfigurationFile(const std::string& config)
 
     if (m_config.discovery.scans.empty() && m_config.discovery.type == Config::Discovery::Type::MultiScan) {
         valid = false;
-        logError() << "error in config file" << config << ": can't have rangescan without range";
+        logError() << "error in config file" << m_config.fileName() << ": can't have rangescan without range";
     } else if (m_config.discovery.ips.empty() && m_config.discovery.type == Config::Discovery::Type::IpScan) {
         valid = false;
-        logError() << "error in config file" << config << ": can't have ipscan without ip list";
+        logError() << "error in config file" << m_config.fileName() << ": can't have ipscan without ip list";
     } else {
         if (m_config.discovery.type == Config::Discovery::Type::MultiScan) {
             if (auto sizeTemp = computeScansSize(m_config.discovery.scans)) {
@@ -329,12 +326,12 @@ bool Discovery::Impl::computeConfigurationFile(const std::string& config)
             } else {
                 valid = false;
                 logError() << sizeTemp.error();
-                logError() << "Error in config file" << config << ": error in range or subnet";
+                logError() << "Error in config file" << m_config.fileName() << ": error in range or subnet";
             }
         } else if (m_config.discovery.type == Config::Discovery::Type::IpScan) {
             if (!computeIpList(m_config.discovery.ips)) {
                 valid = false;
-                logError() << "Error in config file" << config << ": error in ip list";
+                logError() << "Error in config file" << m_config.fileName() << ": error in ip list";
             } else {
                 m_configurationScan.type      = Config::Discovery::Type::IpScan;
                 m_configurationScan.scan_size = int64_t(m_config.discovery.ips.size());
@@ -348,7 +345,7 @@ bool Discovery::Impl::computeConfigurationFile(const std::string& config)
     }
 
     if (valid) {
-        logDbg() << "config file" << config << "applied successfully";
+        logDbg() << "config file" << m_config.fileName() << "applied successfully";
     }
 
     return valid;
@@ -494,39 +491,39 @@ void Discovery::Impl::handlePipeConsumer(ZMessage&& message)
     // ask for assets now
     ZMessage republish;
     republish.add("$all");
-    m_mlm.sendto(FTY_ASSET, REQ_REPUBLISH, nullptr, 1000, std::move(republish));
+    m_mlm.sendto("asset-agent", fty::convert<std::string>(discovery::Command::Republish), nullptr, 1000, std::move(republish));
 }
 
 void Discovery::Impl::handlePipeConfig(ZMessage&& message)
 {
     auto   config = message.pop<std::string>();
-    Config conf   = pack::zconfig::deserializeFile<Config>(*config);
+    m_config.load(*config);
 
-    if (!conf.hasValue()) {
+    if (!m_config.hasValue()) {
         logError() << "failed to load config file" << *config;
     }
 
     bool valid = true;
 
-    if (conf.discovery.scans.empty() && conf.discovery.type == Config::Discovery::Type::MultiScan) {
+    if (m_config.discovery.scans.empty() && m_config.discovery.type == Config::Discovery::Type::MultiScan) {
         valid = false;
         logError() << "error in config file" << *config << ": can't have rangescan without range";
-    } else if (conf.discovery.ips.empty() && conf.discovery.type == Config::Discovery::Type::IpScan) {
+    } else if (m_config.discovery.ips.empty() && m_config.discovery.type == Config::Discovery::Type::IpScan) {
         valid = false;
         logError() << "error in config file " << *config << ": can't have ipscan without ip list";
     } else {
-        auto sizeTemp = computeScansSize(conf.discovery.scans);
-        if (sizeTemp && computeIpList(conf.discovery.ips)) {
+        auto sizeTemp = computeScansSize(m_config.discovery.scans);
+        if (sizeTemp && computeIpList(m_config.discovery.ips)) {
             // ok, validate the config
-            m_configurationScan.type      = conf.discovery.type;
+            m_configurationScan.type      = m_config.discovery.type;
             m_configurationScan.scan_size = *sizeTemp;
             m_configurationScan.scan_list.clear();
-            m_configurationScan.scan_list = conf.discovery.scans.value();
+            m_configurationScan.scan_list = m_config.discovery.scans.value();
 
             if (m_configurationScan.type == Config::Discovery::Type::IpScan) {
-                m_configurationScan.scan_size = conf.discovery.ips.size();
+                m_configurationScan.scan_size = m_config.discovery.ips.size();
                 m_configurationScan.scan_list.clear();
-                m_configurationScan.scan_list = conf.discovery.ips.value();
+                m_configurationScan.scan_list = m_config.discovery.ips.value();
             }
         } else {
             valid = false;
@@ -534,9 +531,9 @@ void Discovery::Impl::handlePipeConfig(ZMessage&& message)
         }
     }
 
-    std::string mappingPath = conf.parameters.mappingFile;
+    std::string mappingPath = m_config.parameters.mappingFile;
     if (mappingPath == "none") {
-        logError() << "No mapping file declared under config key '" << conf.parameters.mappingFile.key()
+        logError() << "No mapping file declared under config key '" << m_config.parameters.mappingFile.key()
                    << "'";
         valid = false;
     } else {
@@ -666,7 +663,7 @@ void Discovery::Impl::launchScan(ZMessage&& msg, Poller& poller)
                         m_rangeScanConfig.push_back({m_localScanSubScan.back(), nullptr});
 
                         logDbg() << "Range scanner requested for" << m_rangeScanConfig.back().first
-                                 << "with config file" << m_rangeScanConfig.config;
+                                 << "with config file" << m_config.fileName();
                         m_localScanSubScan.pop_back();
                     }
                     // create range scanner
@@ -696,7 +693,7 @@ void Discovery::Impl::launchScan(ZMessage&& msg, Poller& poller)
                     m_rangeScanConfig.emplace_back(first, last);
 
                     logDbg() << "Range scanner requested for" << next_scan << "with config file"
-                             << m_rangeScanConfig.config;
+                             << m_config.fileName();
 
                     m_localScanSubScan.pop_back();
                 }
@@ -867,3 +864,18 @@ void Discovery::Impl::rangeScannerNew()
     m_rangeScanner = std::unique_ptr<fty::scan::RangeScan>();
     m_rangeScanner->run(m_rangeScanConfig, m_devicesDiscovered, m_nutMappingInventory);
 }
+
+// ===========================================================================================================
+
+const std::string& DiscoveryConfig::fileName() const
+{
+    return m_fileName;
+}
+
+void DiscoveryConfig::load(const std::string& file)
+{
+    clear();
+    pack::zconfig::deserializeFile(file, *this);
+    m_fileName = file;
+}
+

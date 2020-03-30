@@ -60,6 +60,11 @@ raven_target(exe ${PROJECT_NAME}
         libfty_proto
         libfty_common_db
         fty-common-logging
+        cxxtools
+        tntdb
+        libfty_common_socket
+        libfty_security_wallet
+        libfty_common_nut
 )
 
 

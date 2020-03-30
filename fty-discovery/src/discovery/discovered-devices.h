@@ -15,6 +15,7 @@ public:
     bool containsIp(const std::string& ip) const;
     void remove(const std::string& key);
     void emplace(const std::string& key, const std::string& value);
+    bool empty() const;
 
     std::mutex& mutex() const;
 
@@ -23,10 +24,10 @@ public:
     ConstIterator begin() const;
     ConstIterator end() const;
 
+
 private:
     mutable std::mutex m_mutex;
     Container          m_list;
 };
 
-}
-
+} // namespace fty

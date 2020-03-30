@@ -10,6 +10,16 @@
 
 class Poller;
 
+class DiscoveryConfig: public Config
+{
+public:
+    const std::string& fileName() const;
+    void load(const std::string& file);
+
+private:
+    std::string m_fileName;
+};
+
 class Discovery::Impl : public Actor<Discovery::Impl>
 {
 public:
@@ -24,7 +34,7 @@ private:
 
     void configureLocalScan();
 
-    bool computeConfigurationFile(const std::string& config);
+    bool computeConfigurationFile();
 
     void createAsset(ZMessage&& msg);
 
@@ -82,5 +92,5 @@ private:
     fty::DiscoveredDevices                m_devicesDiscovered;
     fty::nut::KeyValues                   m_nutMappingInventory;
     std::vector<link_t>                   m_defaultValuesLinks;
-    Config                                m_config;
+    DiscoveryConfig                       m_config;
 };

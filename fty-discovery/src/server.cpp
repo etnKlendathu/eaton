@@ -36,6 +36,16 @@ void Discovery::run()
     m_impl->run();
 }
 
+void Discovery::write(ZMessage&& msg)
+{
+    m_impl->send(std::move(msg));
+}
+
+ZMessage Discovery::read() const
+{
+    return m_impl->read();
+}
+
 
 // ===========================================================================================================
 

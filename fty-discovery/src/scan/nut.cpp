@@ -58,12 +58,12 @@ struct NutOutput
 };
 
 // parse nut config line (key = "value")
-static std::pair<std::string, std::string> keyAndValue(const std::string& line)
-{
-    static std::regex re("([a-zA-Z0-9]+)\\s*=\\s*\"([^\"]+)\"");
-    auto [key, value] = split<std::string, std::string>(line, re);
-    return {key, value};
-}
+//static std::pair<std::string, std::string> keyAndValue(const std::string& line)
+//{
+//    static std::regex re("([a-zA-Z0-9]+)\\s*=\\s*\"([^\"]+)\"");
+//    auto [key, value] = split<std::string, std::string>(line, re);
+//    return {key, value};
+//}
 
 static void nutOutputToMessages(
     std::vector<NutOutput>& assets, const nut::DeviceConfigurations& output, const DiscoveredDevices& devices)
@@ -181,10 +181,11 @@ static bool nutDumpdataToFtyMessage(std::vector<FtyProto>& assets, const nut::De
 
 class DumpActor : public Actor<DumpActor>
 {
+    static constexpr uint DefaultDumpDataLoop = 2;
 public:
     void runWorker(const NutOutput& output, const ScanResult& result, const nut::KeyValues& mappings)
     {
-        uint loopNb = convert<uint>(DEFAULT_DUMPDATA_LOOP);
+        uint loopNb = DefaultDumpDataLoop;
         if (::getenv(BIOS_NUT_DUMPDATA_ENV)) {
             loopNb = convert<uint>(::getenv(BIOS_NUT_DUMPDATA_ENV));
         }

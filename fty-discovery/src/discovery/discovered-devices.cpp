@@ -24,6 +24,12 @@ void DiscoveredDevices::emplace(const std::string& key, const std::string& value
     m_list.emplace(key, value);
 }
 
+bool DiscoveredDevices::empty() const
+{
+    std::lock_guard<std::mutex> lock(m_mutex);
+    return m_list.empty();
+}
+
 std::mutex& DiscoveredDevices::mutex() const
 {
     return m_mutex;

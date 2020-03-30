@@ -42,12 +42,18 @@ enum class Result
     Error
 };
 
+enum class Deliver
+{
+    Stream,
+    MailBox
+};
+
 }
 
 namespace fty {
 
 template<>
-std::string convert(const discovery::Command& value)
+inline std::string convert(const discovery::Command& value)
 {
     switch (value) {
         case discovery::Command::Bind:
@@ -90,7 +96,7 @@ std::string convert(const discovery::Command& value)
 }
 
 template<>
-discovery::Command convert(const std::string& value)
+inline discovery::Command convert(const std::string& value)
 {
     if (value == "BIND") {
         return discovery::Command::Bind;
@@ -133,7 +139,7 @@ discovery::Command convert(const std::string& value)
 }
 
 template<>
-std::string convert(const discovery::Status& value)
+inline std::string convert(const discovery::Status& value)
 {
     switch (value) {
         case discovery::Status::Running:
@@ -150,7 +156,7 @@ std::string convert(const discovery::Status& value)
 }
 
 template<>
-discovery::Status convert(const std::string& value)
+inline discovery::Status convert(const std::string& value)
 {
     if (value == "RUNNING") {
         return discovery::Status::Running;
@@ -167,7 +173,7 @@ discovery::Status convert(const std::string& value)
 }
 
 template<>
-std::string convert(const discovery::Result& value)
+inline std::string convert(const discovery::Result& value)
 {
     switch (value) {
         case discovery::Result::Ok:
@@ -180,7 +186,7 @@ std::string convert(const discovery::Result& value)
 }
 
 template<>
-discovery::Result convert(const std::string& value)
+inline discovery::Result convert(const std::string& value)
 {
     if (value == "OK") {
         return discovery::Result::Ok;
@@ -188,6 +194,28 @@ discovery::Result convert(const std::string& value)
         return discovery::Result::Error;
     } else if (value == "FAILED") {
         return discovery::Result::Failed;
+    }
+    throw std::runtime_error(value + " is wrong command");
+}
+
+template<>
+inline std::string convert(const discovery::Deliver& value)
+{
+    switch (value) {
+        case discovery::Deliver::Stream:
+            return "STREAM DELIVER";
+        case discovery::Deliver::MailBox:
+            return "MAILBOX DELIVER";
+    }
+}
+
+template<>
+inline discovery::Deliver convert(const std::string& value)
+{
+    if (value == "STREAM DELIVER") {
+        return discovery::Deliver::Stream;
+    } else if (value == "MAILBOX DELIVER") {
+        return discovery::Deliver::MailBox;
     }
     throw std::runtime_error(value + " is wrong command");
 }

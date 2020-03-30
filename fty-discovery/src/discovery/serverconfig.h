@@ -9,8 +9,10 @@ public:
     static ServerConfig& instance();
 public:
     void load(const std::string& file);
+    const std::string& fileName() const;
 private:
     ServerConfig() = default;
+    std::string m_fileName;
 };
 
 }

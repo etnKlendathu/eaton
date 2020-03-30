@@ -512,6 +512,7 @@ public:
    */
   bool excludes(const CIDRAddress& address) const;
 
+  bool empty() const;
 private:
   // list of includes
   std::vector<CIDRAddress> _networks;

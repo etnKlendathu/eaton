@@ -39,48 +39,48 @@
 #include <string.h>
 
 CIDRAddress::CIDRAddress() {
-  _cidr = NULL;
+  _cidr = nullptr;
 }
 
 CIDRAddress::CIDRAddress(const std::string &address) {
-  _cidr = NULL;
+  _cidr = nullptr;
   set(address);
 }
 
 CIDRAddress::CIDRAddress(const std::string &address, const std::string &prefix) {
-  _cidr = NULL;
+  _cidr = nullptr;
   set(address + "/" + prefix);
 }
 
 CIDRAddress::CIDRAddress(const std::string &address, const unsigned int prefix) {
-  _cidr = NULL;
+  _cidr = nullptr;
   set(address + "/" + std::to_string( prefix ) );
 }
 
 CIDRAddress::CIDRAddress(const struct in_addr* address) {
-  _cidr = NULL;
+  _cidr = nullptr;
   set(address);
 }
 
 CIDRAddress::CIDRAddress(const struct in6_addr* address) {
-  _cidr = NULL;
+  _cidr = nullptr;
   set(address);
 }
 
 CIDRAddress::CIDRAddress(const struct sockaddr* address) {
-  _cidr = NULL;
+  _cidr = nullptr;
   set(address);
 }
 
 CIDRAddress::CIDRAddress(const CIDRAddress& address) {
-  _cidr = NULL;
+  _cidr = nullptr;
   set(address);
 }
 
 CIDRAddress::CIDRAddress(CIDRAddress&& other) {
-  _cidr = NULL;
+  _cidr = nullptr;
   setCidrPtr(other._cidr);;
-  other._cidr = NULL;
+  other._cidr = nullptr;
 }
 
 CIDRAddress& CIDRAddress::operator++() {
@@ -146,7 +146,7 @@ CIDRAddress& CIDRAddress::operator--() {
 CIDRAddress CIDRAddress::operator++(int) {
   CIDRAddress result;
 
-  result.setCidrPtr(_cidr ? cidr_dup(_cidr) : NULL);
+  result.setCidrPtr(_cidr ? cidr_dup(_cidr) : nullptr);
   ++(*this);
   return result;
 }
@@ -154,7 +154,7 @@ CIDRAddress CIDRAddress::operator++(int) {
 CIDRAddress CIDRAddress::operator--(int) {
   CIDRAddress result;
 
-  result.setCidrPtr(_cidr ? cidr_dup(_cidr) : NULL);
+  result.setCidrPtr(_cidr ? cidr_dup(_cidr) : nullptr);
   --(*this);
   return result;
 }
@@ -205,11 +205,11 @@ bool CIDRAddress::isNetmask() const {
 }
 
 void CIDRAddress::invalidate() {
-  setCidrPtr(NULL);
+  setCidrPtr(nullptr);
 }
 
 bool CIDRAddress::valid() const {
-  if( _cidr == NULL ) return false;
+  if( _cidr == nullptr ) return false;
 
   in_addr in_addr4;
   in6_addr in_addr6;
@@ -305,28 +305,28 @@ CIDRAddress CIDRAddress::broadcast() const {
 bool CIDRAddress::set(const std::string &text) {
   CIDR *newcidr = cidr_from_str(text.c_str());
   setCidrPtr(newcidr);
-  return (_cidr != NULL);
+  return (_cidr != nullptr);
 }
 
 bool CIDRAddress::set(const CIDRAddress& from) {
-  setCidrPtr(from._cidr ? cidr_dup(from._cidr) : NULL);
-  return ( _cidr != NULL );
+  setCidrPtr(from._cidr ? cidr_dup(from._cidr) : nullptr);
+  return ( _cidr != nullptr );
 }
 
 bool CIDRAddress::set(const struct in_addr* address) {
     CIDR *newcidr = cidr_from_inaddr(address);
     setCidrPtr(newcidr);
-    return (_cidr != NULL);
+    return (_cidr != nullptr);
 }
 
 bool CIDRAddress::set(const struct in6_addr* address) {
     CIDR *newcidr = cidr_from_in6addr(address);
     setCidrPtr(newcidr);
-    return (_cidr != NULL);
+    return (_cidr != nullptr);
 }
 
 bool CIDRAddress::set(const struct sockaddr* address) {
-    setCidrPtr(NULL);
+    setCidrPtr(nullptr);
     if( ! address ) return false;
     switch( address->sa_family ) {
     case AF_INET:
@@ -430,7 +430,7 @@ CIDRAddress& CIDRAddress::operator=(const std::string &address) {
 
 CIDRAddress& CIDRAddress::operator=(const CIDRAddress& address){
   if( this != &address ){
-    setCidrPtr( address._cidr ? cidr_dup(address._cidr) : NULL );
+    setCidrPtr( address._cidr ? cidr_dup(address._cidr) : nullptr );
   }
   return *this;
 }
@@ -438,14 +438,14 @@ CIDRAddress& CIDRAddress::operator=(const CIDRAddress& address){
 CIDRAddress& CIDRAddress::operator=(CIDRAddress&& address){
   if( this != &address ){
     setCidrPtr( address._cidr );
-    address._cidr = NULL;
+    address._cidr = nullptr;
   }
   return *this;
 }
 
 
 CIDRAddress::~CIDRAddress() {
-  setCidrPtr( NULL );
+  setCidrPtr( nullptr );
 }
 
 bool CIDRAddress::operator>(const CIDRAddress &a2) const {
@@ -680,6 +680,11 @@ bool CIDRList::excludes(const CIDRAddress& address) const{
 
 CIDRList::~CIDRList(){
 
+}
+
+bool CIDRList::empty() const
+{
+    return _networks.empty();
 }
 
 void
