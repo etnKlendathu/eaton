@@ -1,18 +1,18 @@
 #include "poller.h"
 
-Poller::Poller(std::vector<IActor*> actors)
+Poller::Poller(std::vector<IPipe*> pipes)
 {
-    assert(actors.empty());
+    assert(pipes.empty());
 
-    m_poller = zpoller_new(actors[0]->pipe());
-    m_mapping[actors[0]->pipe()] = actors[0];
-    for(size_t i = 1; i < actors.size(); ++i) {
-        zpoller_add(m_poller, actors[i]->pipe());
-        m_mapping[actors[i]->pipe()] = actors[i];
+    m_poller = zpoller_new(pipes[0]->pipe());
+    m_mapping[pipes[0]->pipe()] = pipes[0];
+    for(size_t i = 1; i < pipes.size(); ++i) {
+        zpoller_add(m_poller, pipes[i]->pipe());
+        m_mapping[pipes[i]->pipe()] = pipes[i];
     }
 }
 
-fty::Expected<IActor*> Poller::wait(int timeout)
+fty::Expected<IPipe*> Poller::wait(int timeout)
 {
     void* channel = zpoller_wait(m_poller, timeout);
     if (zpoller_terminated(m_poller)) {
@@ -29,15 +29,15 @@ fty::Expected<IActor*> Poller::wait(int timeout)
     return nullptr;
 }
 
-void Poller::add(IActor* actor)
+void Poller::add(IPipe* pipes)
 {
-    zpoller_add(m_poller, actor->pipe());
-    m_mapping[actor->pipe()] = actor;
+    zpoller_add(m_poller, pipes->pipe());
+    m_mapping[pipes->pipe()] = pipes;
 }
 
-void Poller::remove(IActor* actor)
+void Poller::remove(IPipe* pipes)
 {
-    zpoller_remove(m_poller, actor->pipe());
-    m_mapping.erase(actor->pipe());
+    zpoller_remove(m_poller, pipes->pipe());
+    m_mapping.erase(pipes->pipe());
 }
 

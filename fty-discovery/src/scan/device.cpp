@@ -19,23 +19,25 @@
     =========================================================================
 */
 
-#include "device_scan.h"
+#include "scan/device.h"
 #include "commands.h"
-#include "fty_discovery_server.h"
-#include "scan_nut.h"
+#include "scan/nut.h"
 #include "wrappers/poller.h"
 #include <algorithm>
 #include <czmq.h>
 #include <fty/fty-log.h>
+#include "discovery/serverconfig.h"
+#include "discovery/discovered-devices.h"
 
-bool DeviceScan::scanDevices(const std::vector<CIDRList>& list,
-    const std::map<std::string, std::string>& devices, const fty::nut::KeyValues& nutMapping,
-    const pack::StringList& docs)
+namespace fty::scan {
+
+bool DeviceScan::scanDevices(const std::vector<CIDRList>& list, const DiscoveredDevices& devices,
+    const nut::KeyValues& nutMapping, const pack::StringList& docs)
 {
-    std::vector<ScanNut> actors;
-    Poller               poll(this);
+    std::vector<Nut> actors;
+    Poller           poll(this);
     for (const auto& toScan : list) {
-        ScanNut& actor = actors.emplace_back();
+        Nut& actor = actors.emplace_back();
         actor.run(toScan, devices, nutMapping, docs);
         poll.add(&actor);
     }
@@ -44,7 +46,7 @@ bool DeviceScan::scanDevices(const std::vector<CIDRList>& list,
     size_t number_end_actor = 0;
 
     while (!zsys_interrupted) {
-        fty::Expected<IActor*> which = poll.wait(5000);
+        Expected<IPipe*> which = poll.wait(5000);
         if (!which) {
             break;
         }
@@ -56,7 +58,7 @@ bool DeviceScan::scanDevices(const std::vector<CIDRList>& list,
 
         if (*which == this) {
             if (ZMessage msg = read()) {
-                auto cmd = fty::convert<discovery::Command>(*msg.popStr());
+                auto cmd = *msg.pop<discovery::Command>();
                 if (cmd == discovery::Command::Term) {
                     term = true;
                     break;
@@ -69,12 +71,14 @@ bool DeviceScan::scanDevices(const std::vector<CIDRList>& list,
                 continue;
             }
 
-            auto cmd = fty::convert<discovery::Command>(*msg.popStr());
+            auto cmd = *msg.pop<discovery::Command>();
             if (cmd == discovery::Command::Term) {
                 break;
             } else if (cmd == discovery::Command::Done) {
                 poll.remove(*which);
-                auto actorIt = std::find(actors.begin(), actors.end(), **which);
+                auto actorIt = std::find_if(actors.begin(), actors.end(), [&](const Nut& nut) {
+                    return &nut == *which;
+                });
                 if (actorIt == actors.end()) {
                     // ERROR ? Normaly can't happened
                     logError() << __FUNCTION__ << "Error : actor not in the actor list";
@@ -99,7 +103,7 @@ bool DeviceScan::scanDevices(const std::vector<CIDRList>& list,
                     number_end_actor = 0;
                 }
             } else if (cmd == discovery::Command::Found) {
-                msg.prependStr(fty::convert<std::string>(discovery::Command::Found));
+                msg.prepend(discovery::Command::Found);
                 send(std::move(msg));
             }
         }
@@ -112,8 +116,8 @@ bool DeviceScan::scanDevices(const std::vector<CIDRList>& list,
 //  --------------------------------------------------------------------------
 //  One device scan actor
 
-void DeviceScan::run(const std::vector<CIDRList>& list, const std::map<std::string, std::string>& devices,
-    const fty::nut::KeyValues& nutMapping)
+void DeviceScan::runWorker(
+    const std::vector<CIDRList>& list, const DiscoveredDevices& devices, const nut::KeyValues& nutMapping)
 {
     zsock_signal(pipe(), 0);
 
@@ -125,11 +129,11 @@ void DeviceScan::run(const std::vector<CIDRList>& list, const std::map<std::stri
             continue;
         }
 
-        auto cmd = fty::convert<discovery::Command>(*msg.popStr());
+        auto cmd = *msg.pop<discovery::Command>();
         if (cmd == discovery::Command::Term) {
             break;
         } else if (cmd == discovery::Command::Scan) {
-            Config& conf = discoveryConfig();
+            ServerConfig& conf = ServerConfig::instance();
 
             const int             numberMaxPool = conf.parameters.maxScanPoolNumber;
             std::vector<CIDRList> pool;
@@ -152,3 +156,5 @@ void DeviceScan::run(const std::vector<CIDRList>& list, const std::map<std::stri
     }
     logDbg() << "dsa: device scan actor exited";
 }
+
+} // namespace fty::scan

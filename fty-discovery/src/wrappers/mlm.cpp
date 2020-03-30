@@ -63,13 +63,9 @@ fty::Expected<int> Mlm::sendto(const std::string& address, const std::string& su
 }
 
 
-fty::Expected<zmsg_t*> Mlm::recv()
+ZMessage Mlm::read(Read /*readOp*/) const
 {
-    zmsg_t* res = mlm_client_recv(m_impl->m_client.get());
-    if (!res) {
-        return fty::unexpected("error in recv");
-    }
-    return res;
+    return ZMessage(mlm_client_recv(m_impl->m_client.get()));
 }
 
 fty::Expected<int> Mlm::setConsumer(const std::string& stream, const std::string& pattern)
@@ -96,7 +92,7 @@ std::string Mlm::tracker()
     return mlm_client_tracker(m_impl->m_client.get());
 }
 
-zsock_t* Mlm::msgpipe()
+zsock_t* Mlm::pipe()
 {
     return mlm_client_msgpipe(m_impl->m_client.get());
 }

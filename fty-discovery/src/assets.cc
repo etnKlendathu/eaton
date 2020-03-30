@@ -29,7 +29,7 @@ void Assets::put(FtyProto&& proto)
     }
 
     std::string operation = proto.operation();
-    std::string iname = proto.name();
+    std::string iname     = proto.name();
 
     if (operation.empty() || iname.empty()) {
         // malformed message
@@ -95,4 +95,3 @@ int64_t Assets::lastChange() const
 {
     return m_lastUpdate;
 }
-

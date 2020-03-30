@@ -43,8 +43,8 @@ message Config
         string mappingFile       = 1;
         int32  maxDumpPoolNumber = 2 [(int32_DefaultValue)=15];
         int32  maxScanPoolNumber = 3 [(int32_DefaultValue)=4];
-        int32  nutScannerTimeOut = 4 [(int32_DefaultValue)=20];
-        int32  dumpDataLoopTime  = 5 [(int32_DefaultValue)=30];
+        uint32 nutScannerTimeOut = 4 [(uint32_DefaultValue)=20];
+        uint32  dumpDataLoopTime = 5 [(uint32_DefaultValue)=30];
     }
 
     message Log

@@ -130,10 +130,22 @@ inline std::vector<std::string> split(const std::string& str, const std::string&
 inline std::vector<std::string> split(const std::string& str, const std::regex& delim, SplitOption opt)
 {
     std::vector<std::string>   ret;
-    std::sregex_token_iterator iter(str.begin(), str.end(), delim, -1);
-    std::sregex_token_iterator end;
-    for (; iter != end; ++iter) {
-        detail::addString(ret, opt, *iter);
+    if (!delim.mark_count()) {
+        std::sregex_token_iterator iter(str.begin(), str.end(), delim, -1);
+        std::sregex_token_iterator end;
+        for (; iter != end; ++iter) {
+            detail::addString(ret, opt, *iter);
+        }
+    } else {
+        std::vector<int> submatches;
+        for(size_t i = 1; i <= delim.mark_count(); ++i) {
+            submatches.push_back(int(i));
+        }
+        std::sregex_token_iterator iter(str.begin(), str.end(), delim, submatches);
+        std::sregex_token_iterator end;
+        for (; iter != end; ++iter) {
+            detail::addString(ret, opt, *iter);
+        }
     }
     return ret;
 }

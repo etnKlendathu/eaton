@@ -1,6 +1,5 @@
 #include "fty/expected.h"
 #include <catch2/catch.hpp>
-#include <iostream>
 
 struct St
 {
@@ -59,7 +58,6 @@ TEST_CASE("Expected")
 
         fty::Expected<St> st = func();
         CHECK(!st);
-        std::cerr << st.error() << std::endl;
         CHECK("wrong 42" == st.error());
     }
 }

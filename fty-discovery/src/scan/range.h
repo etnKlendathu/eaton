@@ -1,5 +1,5 @@
 /*  =========================================================================
-    scan_nut - collect information from DNS
+    range_scan - Perform one range scan
 
     Copyright (C) 2014 - 2017 Eaton
 
@@ -21,14 +21,22 @@
 
 #pragma once
 #include "wrappers/actor.h"
-#include "config.h"
 #include <fty_common_nut_types.h>
-#include "cidr.h"
 
+namespace fty {
+class DiscoveredDevices;
+}
 
-class ScanNut : public Actor<ScanNut>
+namespace fty::scan {
+
+/// Perform one range scan
+class RangeScan : public Actor<RangeScan>
 {
 public:
-    void run(const CIDRList& list, const std::map<std::string, std::string>& devices,
-        const fty::nut::KeyValues& nutMapping, const pack::StringList& docs);
+    using Ranges = std::vector<std::pair<std::string, std::string>>;
+
+public:
+    void runWorker(const Ranges& ranges, const DiscoveredDevices& devices, const nut::KeyValues& nutMapping);
 };
+
+} // namespace fty::scan

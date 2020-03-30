@@ -26,24 +26,27 @@ public:
     ZMessage(ZMessage&&)                 = default;
     ZMessage& operator=(ZMessage&&) = default;
 
-    fty::Expected<std::string> popStr() const
+    template <typename T>
+    fty::Expected<T> pop() const
     {
         if (char* str = zmsg_popstr(m_message.get())) {
             std::string ret = str;
             zstr_free(&str);
-            return std::move(ret);
+            return std::move(fty::convert<T>(ret));
         }
         return fty::unexpected("Empty command");
     }
 
-    void addStr(const std::string& str)
+    template <typename T>
+    void add(const T& str)
     {
-        zmsg_addstr(m_message.get(), str.c_str());
+        zmsg_addstr(m_message.get(), fty::convert<std::string>(str).c_str());
     }
 
-    void prependStr(const std::string& str)
+    template <typename T>
+    void prepend(const T& str)
     {
-        zmsg_pushstr(m_message.get(), str.c_str());
+        zmsg_pushstr(m_message.get(), fty::convert<std::string>(str).c_str());
     }
 
     void print() const
@@ -70,7 +73,7 @@ public:
     static ZMessage create(const Args&... args)
     {
         ZMessage msg;
-        (msg.addStr(fty::convert<std::string>(args)),...);
+        (msg.add(args), ...);
         return msg;
     }
 

@@ -19,31 +19,22 @@
     =========================================================================
 */
 
-#include "range_scan.h"
+#include "scan/range.h"
 #include "cidr.h"
-#include "device_scan.h"
+#include "commands.h"
+#include "scan/device.h"
+#include "wrappers/poller.h"
 #include <fty/fty-log.h>
 #include <fty/split.h>
-#include "commands.h"
-#include "wrappers/poller.h"
 
-RangeScan::RangeScan(const std::string& range)
-    : m_range(range)
-{
-    auto [_, prefix] = fty::split<std::string, int>(m_range, "/");
-    if (prefix <= 32) {
-        m_size = 1 << (32 - prefix);
-    }
-}
+namespace fty::scan {
 
-void RangeScan::run(const Ranges& ranges, const std::map<std::string, std::string>& devices,
-    const fty::nut::KeyValues& nutMapping)
+void RangeScan::runWorker(
+    const Ranges& ranges, const DiscoveredDevices& devices, const nut::KeyValues& nutMapping)
 {
     Finisher finisher([&]() {
         write(discovery::Command::Done);
     });
-
-    zsock_signal(pipe(), 0);
 
     if (ranges.size() < 1) {
         return;
@@ -63,7 +54,7 @@ void RangeScan::run(const Ranges& ranges, const std::map<std::string, std::strin
 
     std::vector<CIDRList> scans;
     for (auto range : ranges) {
-        CIDRList list;
+        CIDRList    list;
         CIDRAddress addr;
         CIDRAddress addrDest;
 
@@ -87,7 +78,7 @@ void RangeScan::run(const Ranges& ranges, const std::map<std::string, std::strin
 
     scan.write(discovery::Command::Scan);
 
-    while(true) {
+    while (true) {
         auto channel = poll.wait(1000);
         if (!channel) {
             logError() << channel.error();
@@ -101,21 +92,22 @@ void RangeScan::run(const Ranges& ranges, const std::map<std::string, std::strin
 
         if (*channel == this) {
             if (ZMessage msg = read()) {
-                discovery::Command cmd = fty::convert<discovery::Command>(*msg.popStr());
+                discovery::Command cmd = *msg.pop<discovery::Command>();
                 if (cmd == discovery::Command::Term) {
                     break;
                 }
             }
         } else if (*channel == &scan) {
             if (ZMessage msg = scan.read()) {
-                discovery::Command cmd = fty::convert<discovery::Command>(*msg.popStr());
+                discovery::Command cmd = *msg.pop<discovery::Command>();
                 if (cmd == discovery::Command::Done) {
                     break;
                 }
-                msg.prependStr(fty::convert<std::string>(discovery::Command::Found));
+                msg.prepend(discovery::Command::Found);
                 send(std::move(msg));
             }
         }
     }
 }
 
+} // namespace fty::scan

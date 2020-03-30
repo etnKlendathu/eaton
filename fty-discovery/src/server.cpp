@@ -1,5 +1,5 @@
 /*  =========================================================================
-    scan_dns - collect information from DNS
+    fty_discovery_server - Manages discovery requests, provides feedback
 
     Copyright (C) 2014 - 2017 Eaton
 
@@ -17,28 +17,26 @@
     with this program; if not, write to the Free Software Foundation, Inc.,
     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
     =========================================================================
-*/
+ */
 
-#ifndef SCAN_DNS_H_INCLUDED
-#define SCAN_DNS_H_INCLUDED
+#include "server.h"
+#include "discovery/discovery-impl.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-//  @interface
-//  Do dns resolving
-FTY_DISCOVERY_PRIVATE bool
-    scan_dns (fty_proto_t *msg, const char *address, zconfig_t *config);
-
-//  Self test of this class
-FTY_DISCOVERY_PRIVATE void
-    scan_dns_test (bool verbose);
-
-//  @end
-
-#ifdef __cplusplus
+Discovery::Discovery()
+    : m_impl(new Impl)
+{
 }
-#endif
 
-#endif
+Discovery::~Discovery()
+{
+}
+
+void Discovery::run()
+{
+    m_impl->run();
+}
+
+
+// ===========================================================================================================
+
+

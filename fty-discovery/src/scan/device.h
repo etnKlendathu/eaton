@@ -25,16 +25,22 @@
 #include "wrappers/actor.h"
 #include <fty_common_nut_types.h>
 
+namespace fty {
+class DiscoveredDevices;
+}
+
+namespace fty::scan {
 
 /// Perform one IP address scan
 class DeviceScan : public Actor<DeviceScan>
 {
 public:
-    DeviceScan();
-    void run(const std::vector<CIDRList>& list, const std::map<std::string, std::string>& devices,
-        const fty::nut::KeyValues& nutMapping);
+    void runWorker(const std::vector<CIDRList>& list, const DiscoveredDevices& devices,
+        const nut::KeyValues& nutMapping);
 
 private:
-    bool scanDevices(const std::vector<CIDRList>& list, const std::map<std::string, std::string>& devices,
-        const fty::nut::KeyValues& nutMapping, const pack::StringList& docs);
+    bool scanDevices(const std::vector<CIDRList>& list, const DiscoveredDevices& devices,
+        const nut::KeyValues& nutMapping, const pack::StringList& docs);
 };
+
+} // namespace fty::scan

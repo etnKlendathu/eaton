@@ -19,17 +19,13 @@
     =========================================================================
 */
 
-/*
-@header
-    fty_discovery - Agent performing device discovery in network
-@discuss
-@end
-*/
-
-#include "fty_discovery_classes.h"
+#include "server.h"
 #include <fty/command-line.h>
 #include <fty/fty-log.h>
 #include "wrappers/zmessage.h"
+#include "discovery/serverconfig.h"
+#include <fty_common_db.h>
+#include "commands.h"
 
 
 int main(int argc, char* argv[])
@@ -38,7 +34,7 @@ int main(int argc, char* argv[])
     bool        agent   = false;
     bool        help    = false;
     std::string range;
-    std::string config = FTY_DISCOVERY_CFG_FILE;
+    std::string config = Discovery::CfgFile;
 
     // clang-format off
     fty::CommandLine cmd(
@@ -67,7 +63,8 @@ int main(int argc, char* argv[])
         return 0;
     }
 
-    Config conf = pack::zconfig::deserializeFile<Config>(config);
+    auto& conf = fty::ServerConfig::instance();
+    conf.load(config);
 
     fty::ManageFtyLog::getInstanceFtylog().setConfigFile(conf.log.config);
 
@@ -80,32 +77,30 @@ int main(int argc, char* argv[])
     logDbg() << "fty_discovery - range:" << (!range.empty() ? range : "none") << ", agent" << agent;
 
     Discovery server;
-    if (!server.init()) {
-        return 1;
-    }
+    server.run();
 
     std::string name = Discovery::ActorName;
     if (!agent) {
         name += "."+ std::to_string(getpid());
     }
-    server.runCommand(Discovery::Command::Bind, Discovery::Endpoint, name);
-    server.runCommand(Discovery::Command::Config, config);
-    server.runCommand(Discovery::Command::Consumer, FTY_PROTO_STREAM_ASSETS, ".*");
+    server.write(ZMessage::create(discovery::Command::Bind, Discovery::Endpoint, name));
+    server.write(ZMessage::create(discovery::Command::Config, config));
+    server.write(ZMessage::create(discovery::Command::Consumer, FTY_PROTO_STREAM_ASSETS, ".*"));
 
     if (!range.empty()) {
-        server.runCommand(Discovery::Command::Scan, range);
+        server.write(ZMessage::create(discovery::Command::Scan, range));
     } else if (!agent) {
-        server.runCommand(Discovery::Command::LocalScan);
+        server.write(ZMessage::create(discovery::Command::LocalScan));
     }
 
     // main loop
     while (!zsys_interrupted) {
         ZMessage msg = server.read();
         if (msg) {
-            auto cmd = msg.popStr();
-            logDbg() << "main:" << (cmd ? *cmd : "(null)") << "command received";
+            auto cmd = msg.pop<discovery::Command>();
+            logDbg() << "main:" << (cmd ? fty::convert<std::string>(*cmd) : "(null)") << "command received";
             if (cmd) {
-                if (!agent && *cmd == REQ_DONE) {
+                if (!agent && *cmd == discovery::Command::Done) {
                     break;
                 }
             }

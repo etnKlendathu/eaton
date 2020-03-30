@@ -39,6 +39,8 @@ void FileGenerator::generateHeader(io::Printer& printer) const
 {
     Formatter frm(printer);
 
+    frm << "#pragma once\n";
+
     for (int i = 0; i < m_file->dependency_count(); ++i) {
         auto dep = m_file->dependency(i);
         frm << "#include \"" << genFileName(dep) << "\"\n";

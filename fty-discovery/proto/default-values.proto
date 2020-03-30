@@ -2,6 +2,7 @@ syntax = "proto3";
 import "google/protobuf/descriptor.proto";
 
 extend google.protobuf.FieldOptions {
-    int32  int32_DefaultValue  = 51234;
-    string string_DefaultValue = 51235;
+    string string_DefaultValue  = 51235;
+    int32  int32_DefaultValue   = 51236;
+    int32  uint32_DefaultValue  = 51237;
 }

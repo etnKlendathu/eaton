@@ -76,3 +76,11 @@ TEST_CASE("Split utils")
         CHECK(std::make_tuple("sense of life", 42) == tuple3);
     }
 }
+
+TEST_CASE("Strange split")
+{
+    static std::regex re("([a-zA-Z0-9]+)\\s*=\\s*\"([^\"]+)\"");
+    auto [key, value] = fty::split<std::string, std::string>("key = \"value\"", re);
+    CHECK("key" == key);
+    CHECK("value" == value);
+}

@@ -20,20 +20,22 @@ raven_target(exe ${PROJECT_NAME}
     SOURCES
         src/assets.cc
         src/cidr.cc
-        src/device_scan.cc
         src/fty_discovery.cc
         src/fty_discovery_classes.h
-        src/range_scan.h  scan_dns.h
-        src/scan_nut.h
         src/assets.h
         src/cidr.h
-        src/device_scan.h
-        src/fty_discovery_server.cc
-        src/fty_discovery_server.h
-        src/range_scan.cc
-        src/scan_dns.cc
-        src/scan_nut.cc
+        src/server.cpp
+        src/server.h
         src/commands.h
+
+        src/scan/range.cpp
+        src/scan/range.h
+        src/scan/device.cpp
+        src/scan/device.h
+        src/scan/dns.cpp
+        src/scan/dns.h
+        src/scan/nut.cpp
+        src/scan/nut.h
 
         src/wrappers/mlm.cpp
         src/wrappers/mlm.h
@@ -43,6 +45,14 @@ raven_target(exe ${PROJECT_NAME}
         src/wrappers/ftyproto.h
         src/wrappers/poller.cpp
         src/wrappers/poller.h
+
+        src/discovery/discovery-impl.cpp
+        src/discovery/discovery-impl.h
+        src/discovery/serverconfig.cpp
+        src/discovery/serverconfig.h
+        src/discovery/discovered-devices.cpp
+        src/discovery/discovered-devices.h
+    INCLUDE_DIRS src
     USES
         pack
         libcidr

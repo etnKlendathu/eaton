@@ -1,5 +1,5 @@
 /*  =========================================================================
-    assets - Cache of assets
+    scan_dns - collect information from DNS
 
     Copyright (C) 2014 - 2017 Eaton
 
@@ -20,24 +20,17 @@
 */
 
 #pragma once
-#include "wrappers/ftyproto.h"
-#include <map>
 #include <string>
 
-/// Cache of assets
-class Assets
+class FtyProto;
+
+namespace fty::scan {
+
+/// Collect information from DNS
+class Dns
 {
 public:
-    /// Put one asset into cache
-    void put(FtyProto&& msg);
-
-    /// Find asset by ext attribute
-    const FtyProto* find(const std::string& key, const std::string& value) const;
-
-    /// return the zclock_mono time in ms when last change happened (create or delete, not update)
-    int64_t lastChange() const;
-
-private:
-    int64_t                         m_lastUpdate = 0;
-    std::map<std::string, FtyProto> m_map;
+    static void scanDns(FtyProto& proto, const std::string& address);
 };
+
+}
