@@ -38,6 +38,8 @@ static const std::string SECW_SOCKET_PATH = "/run/fty-security-wallet/secw.socke
 
 namespace fty::scan {
 
+// ===========================================================================================================
+
 struct ScanResult
 {
     ScanResult(const std::string& driver, const std::vector<secw::DocumentPtr>& docs = {})
@@ -51,11 +53,15 @@ struct ScanResult
     nut::DeviceConfigurations      deviceConfigurations;
 };
 
+// ===========================================================================================================
+
 struct NutOutput
 {
     std::string port;
     std::string ip;
 };
+
+// ===========================================================================================================
 
 // parse nut config line (key = "value")
 //static std::pair<std::string, std::string> keyAndValue(const std::string& line)
@@ -65,34 +71,28 @@ struct NutOutput
 //    return {key, value};
 //}
 
+// ===========================================================================================================
+
 static void nutOutputToMessages(
     std::vector<NutOutput>& assets, const nut::DeviceConfigurations& output, const DiscoveredDevices& devices)
 {
     for (const auto& device : output) {
-        bool      found = false;
-        NutOutput asset;
-
         const auto itPort = device.find("port");
-        if (itPort != device.end()) {
-            std::string ip;
-
-            if (size_t pos = itPort->second.find("://"); pos != std::string::npos) {
-                ip = itPort->second.substr(pos + 3);
-            } else {
-                ip = itPort->second;
-            }
-
-            if (devices.containsIp(ip)) {
-                found = false;
-                break;
-            } else {
-                asset.ip   = ip;
-                asset.port = itPort->second;
-                found      = true;
-            }
+        if (itPort == device.end()) {
+            continue;
         }
 
-        if (found) {
+        std::string ip;
+        if (size_t pos = itPort->second.find("://"); pos != std::string::npos) {
+            ip = itPort->second.substr(pos + 3);
+        } else {
+            ip = itPort->second;
+        }
+
+        if (!devices.containsIp(ip)) {
+            NutOutput asset;
+            asset.ip   = ip;
+            asset.port = itPort->second;
             assets.push_back(asset);
         }
     }
@@ -179,6 +179,8 @@ static bool nutDumpdataToFtyMessage(std::vector<FtyProto>& assets, const nut::De
     return !assets.empty();
 }
 
+// ===========================================================================================================
+
 class DumpActor : public Actor<DumpActor>
 {
     static constexpr uint DefaultDumpDataLoop = 2;
@@ -244,6 +246,7 @@ public:
     }
 };
 
+// ===========================================================================================================
 
 bool Nut::createPoolDumpdata(
     const ScanResult& result, const DiscoveredDevices& devices, const nut::KeyValues& mappings)

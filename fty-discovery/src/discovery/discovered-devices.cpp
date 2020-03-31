@@ -3,12 +3,25 @@
 
 namespace fty {
 
+DiscoveredDevices::DiscoveredDevices(DiscoveredDevices&& other):
+    m_list(std::move(other.m_list))
+{
+}
+
+DiscoveredDevices& DiscoveredDevices::operator=(DiscoveredDevices&& other)
+{
+    m_list = std::move(other.m_list);
+    return *this;
+}
+
 bool DiscoveredDevices::containsIp(const std::string& ip) const
 {
     std::lock_guard<std::mutex> lock(m_mutex);
-    auto                        it = std::find_if(m_list.begin(), m_list.end(), [&](const auto& pair) {
+
+    auto it = std::find_if(m_list.begin(), m_list.end(), [&](const auto& pair) {
         return pair.second == ip;
     });
+
     return it != m_list.end();
 }
 
@@ -55,5 +68,4 @@ DiscoveredDevices::ConstIterator DiscoveredDevices::end() const
     return m_list.end();
 }
 
-
-}
+} // namespace fty

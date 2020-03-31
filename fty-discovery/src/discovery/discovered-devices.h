@@ -4,6 +4,8 @@
 
 namespace fty {
 
+// ===========================================================================================================
+
 class DiscoveredDevices
 {
 public:
@@ -12,6 +14,13 @@ public:
     using ConstIterator = Container::const_iterator;
 
 public:
+    DiscoveredDevices() = default;
+    DiscoveredDevices(const DiscoveredDevices&) = delete;
+    DiscoveredDevices& operator=(const DiscoveredDevices&) = delete;
+    DiscoveredDevices(DiscoveredDevices&&);
+    DiscoveredDevices& operator=(DiscoveredDevices&&);
+
+
     bool containsIp(const std::string& ip) const;
     void remove(const std::string& key);
     void emplace(const std::string& key, const std::string& value);
@@ -29,5 +38,7 @@ private:
     mutable std::mutex m_mutex;
     Container          m_list;
 };
+
+// ===========================================================================================================
 
 } // namespace fty

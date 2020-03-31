@@ -45,26 +45,3 @@ private:
     std::unique_ptr<Impl> m_impl;
 };
 
-
-//#define DEFAULT_DUMPDATA_LOOP "2"
-
-//#define STATUS_STOPPED  1
-//#define STATUS_FINISHED 2
-//#define STATUS_PROGESS  3
-//#define STATUS_STOPPING "STOPPING"
-//#define STATUS_RUNNING  "RUNNING"
-
-
-//#define STREAM_CMD  "STREAM DELIVER"
-//#define MAILBOX_CMD "MAILBOX DELIVER"
-
-//#define RESP_OK  "OK"
-//#define RESP_ERR "ERROR"
-
-//#define INFO_READY   "READY"
-//#define CMD_CONTINUE "CONTINUE"
-
-//#define FTY_ASSET "asset-agent"
-
-//#define CREATE_USER "system"
-//#define CREATE_MODE "3"

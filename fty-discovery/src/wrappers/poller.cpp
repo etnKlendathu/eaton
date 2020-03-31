@@ -2,7 +2,7 @@
 
 Poller::Poller(std::vector<IPipe*> pipes)
 {
-    assert(pipes.empty());
+    assert(!pipes.empty());
 
     m_poller = zpoller_new(pipes[0]->pipe());
     m_mapping[pipes[0]->pipe()] = pipes[0];

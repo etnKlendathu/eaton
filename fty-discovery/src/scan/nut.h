@@ -25,9 +25,13 @@
 #include "wrappers/actor.h"
 #include <fty_common_nut_types.h>
 
+// ===========================================================================================================
+
 namespace fty {
 class DiscoveredDevices;
 }
+
+// ===========================================================================================================
 
 namespace fty::scan {
 
@@ -44,5 +48,7 @@ private:
     bool createPoolDumpdata(
         const ScanResult& result, const DiscoveredDevices& devices, const nut::KeyValues& mappings);
 };
+
+// ===========================================================================================================
 
 } // namespace fty::scan

@@ -2,32 +2,41 @@
 #include "assets.h"
 #include "discovery/discovered-devices.h"
 #include "discovery/serverconfig.h"
-#include "server.h"
 #include "scan/range.h"
+#include "server.h"
 #include "wrappers/actor.h"
 #include "wrappers/mlm.h"
 #include <fty_common_db_defs.h>
 
+// ===========================================================================================================
+
 class Poller;
 
-class DiscoveryConfig: public Config
+// ===========================================================================================================
+
+class DiscoveryConfig : public Config
 {
 public:
     const std::string& fileName() const;
-    void load(const std::string& file);
+    void               load(const std::string& file);
 
 private:
     std::string m_fileName;
 };
 
+// ===========================================================================================================
+
 class Discovery::Impl : public Actor<Discovery::Impl>
 {
 public:
+    Impl()            = default;
+    Impl(const Impl&) = delete;
+    Impl& operator=(const Impl&) = delete;
+
     ~Impl() override;
     void runWorker();
 
 private:
-
     void reset();
 
     bool computeIpList(pack::StringList& listIp);
@@ -76,14 +85,14 @@ private:
     Mlm                                   m_mlm;
     Mlm                                   m_mlmCreate;
     Assets                                m_assets;
-    int64_t                               m_nbPercent;
-    int64_t                               m_nbDiscovered;
-    int64_t                               m_scanSize;
-    int64_t                               m_nbUpsDiscovered;
-    int64_t                               m_nbEpduDiscovered;
-    int64_t                               m_nbStsDiscovered;
+    int64_t                               m_nbPercent        = 0;
+    int64_t                               m_nbDiscovered     = 0;
+    int64_t                               m_scanSize         = 0;
+    int64_t                               m_nbUpsDiscovered  = 0;
+    int64_t                               m_nbEpduDiscovered = 0;
+    int64_t                               m_nbStsDiscovered  = 0;
     discovery::Status                     m_statusScan;
-    bool                                  m_ongoingStop;
+    bool                                  m_ongoingStop = false;
     std::vector<std::string>              m_localScanSubScan;
     fty::scan::RangeScan::Ranges          m_rangeScanConfig;
     ConfigurationScan                     m_configurationScan;
@@ -94,3 +103,5 @@ private:
     std::vector<link_t>                   m_defaultValuesLinks;
     DiscoveryConfig                       m_config;
 };
+
+// ===========================================================================================================
