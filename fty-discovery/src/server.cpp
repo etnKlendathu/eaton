@@ -31,9 +31,10 @@ Discovery::~Discovery()
 {
 }
 
-void Discovery::run()
+int Discovery::run()
 {
     m_impl->run();
+    return 0;
 }
 
 void Discovery::write(ZMessage&& msg)
@@ -44,6 +45,11 @@ void Discovery::write(ZMessage&& msg)
 ZMessage Discovery::read() const
 {
     return m_impl->read();
+}
+
+void Discovery::bind(const std::string& name)
+{
+    m_impl->bind(name);
 }
 
 

@@ -16,6 +16,8 @@ raven_target(interface ${PROJECT_NAME}
         fty/split.h
         fty/traits.h
         fty/expected.h
+        fty/event.h
+        fty/thread-pool.h
 )
 
 ##############################################################################################################

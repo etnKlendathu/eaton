@@ -36,10 +36,12 @@ public:
     Discovery();
     ~Discovery();
 
-    void run();
+    int run();
 
     void write(ZMessage&& msg);
     ZMessage read() const;
+
+    void bind(const std::string& name);
 private:
     class Impl;
     std::unique_ptr<Impl> m_impl;

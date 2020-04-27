@@ -33,7 +33,8 @@ namespace fty::scan {
 class RangeScan : public Actor<RangeScan>
 {
 public:
-    using Ranges = std::vector<std::pair<std::string, std::string>>;
+    using Range  = std::pair<std::string, std::string>;
+    using Ranges = std::vector<Range>;
 
 public:
     void runWorker(const Ranges& ranges, const DiscoveredDevices& devices, const nut::KeyValues& nutMapping);

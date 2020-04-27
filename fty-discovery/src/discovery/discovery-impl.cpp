@@ -3,8 +3,8 @@
 #include "wrappers/poller.h"
 #include <fty/fty-log.h>
 #include <fty/split.h>
-#include <fty_common_nut.h>
 #include <fty_common_db.h>
+#include <fty_common_nut.h>
 
 
 static fty::Expected<int64_t> computeScansSize(pack::StringList& listScan)
@@ -154,9 +154,22 @@ Discovery::Impl::~Impl()
 {
 }
 
+void Discovery::Impl::bind(const std::string& name)
+{
+    m_mlm.connect(Discovery::Endpoint, 5000, name);
+    m_mlmCreate.connect(Discovery::Endpoint, 5000, name + ".create");
+
+    m_mlm.setConsumer(FTY_PROTO_STREAM_ASSETS, ".*");
+
+    // ask for assets now
+    m_mlm.sendto("asset-agent", fty::convert<std::string>(discovery::Command::Republish), nullptr, 1000,
+        ZMessage::create("$all"));
+}
+
+
 void Discovery::Impl::runWorker()
 {
-    Poller   poll(this, &m_mlm);
+    Poller poll(this, &m_mlm);
 
     while (!zsys_interrupted) {
         auto which = poll.wait(5000);
@@ -491,12 +504,13 @@ void Discovery::Impl::handlePipeConsumer(ZMessage&& message)
     // ask for assets now
     ZMessage republish;
     republish.add("$all");
-    m_mlm.sendto("asset-agent", fty::convert<std::string>(discovery::Command::Republish), nullptr, 1000, std::move(republish));
+    m_mlm.sendto("asset-agent", fty::convert<std::string>(discovery::Command::Republish), nullptr, 1000,
+        std::move(republish));
 }
 
 void Discovery::Impl::handlePipeConfig(ZMessage&& message)
 {
-    auto   config = message.pop<std::string>();
+    auto config = message.pop<std::string>();
     m_config.load(*config);
 
     if (!m_config.hasValue()) {
@@ -878,4 +892,3 @@ void DiscoveryConfig::load(const std::string& file)
     pack::zconfig::deserializeFile(file, *this);
     m_fileName = file;
 }
-

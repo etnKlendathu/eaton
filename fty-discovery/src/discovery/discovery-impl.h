@@ -35,6 +35,7 @@ public:
 
     ~Impl() override;
     void runWorker();
+    void bind(const std::string& name);
 
 private:
     void reset();

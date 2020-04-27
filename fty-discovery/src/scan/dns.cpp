@@ -31,7 +31,7 @@ void Dns::scanDns(FtyProto& proto, const std::string& address)
 {
     sockaddr_in sa_in;
     sockaddr*   sa  = reinterpret_cast<sockaddr*>(&sa_in);
-    socklen_t          len = sizeof(sockaddr_in);
+    socklen_t   len = sizeof(sockaddr_in);
 
     char dns_name[NI_MAXHOST];
 
@@ -56,4 +56,4 @@ void Dns::scanDns(FtyProto& proto, const std::string& address)
     }
 }
 
-}
+} // namespace fty::scan

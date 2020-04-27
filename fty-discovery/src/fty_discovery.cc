@@ -77,15 +77,21 @@ int main(int argc, char* argv[])
     logDbg() << "fty_discovery - range:" << (!range.empty() ? range : "none") << ", agent" << agent;
 
     Discovery server;
-    server.run();
 
     std::string name = Discovery::ActorName;
     if (!agent) {
         name += "."+ std::to_string(getpid());
     }
-    server.write(ZMessage::create(discovery::Command::Bind, Discovery::Endpoint, name));
-    server.write(ZMessage::create(discovery::Command::Config, config));
-    server.write(ZMessage::create(discovery::Command::Consumer, FTY_PROTO_STREAM_ASSETS, ".*"));
+
+    server.bind(name);
+
+    if (!range.empty()) {
+        server.runScan(discovery::Command::Scan, range);
+    } else if (!agent) {
+        server.runScan(discovery::Command::LocalScan);
+    }
+
+    return server.run();
 
     if (!range.empty()) {
         server.write(ZMessage::create(discovery::Command::Scan, range));

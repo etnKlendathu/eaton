@@ -36,16 +36,18 @@ void RangeScan::runWorker(
         write(discovery::Command::Done);
     });
 
-    if (ranges.size() < 1) {
+    if (ranges.empty()) {
+        logError() << "Empty ranges";
         return;
     }
 
-    for (auto range : ranges) {
+    for (const Range& range : ranges) {
         CIDRAddress addrcheck(range.first);
         if (!addrcheck.valid()) {
             logError() << "Address range (" << range.first << ") is not valid!";
             return;
         }
+
         if (addrcheck.protocol() != 4) {
             logError() << "Scanning is not supported for such range (" << range.first << ")!";
             return;
@@ -53,20 +55,15 @@ void RangeScan::runWorker(
     }
 
     std::vector<CIDRList> scans;
-    for (auto range : ranges) {
+    for (const auto& range : ranges) {
         CIDRList    list;
-        CIDRAddress addr;
-        CIDRAddress addrDest;
 
         if (!range.second.empty()) {
-            CIDRAddress addr_network(range.first);
-            list.add(addr_network.network());
+            list.add(CIDRAddress(range.first).network());
         } else {
             // real range and not subnetwork, need to scan all ips
-            CIDRAddress addrStart(range.first);
-            list.add(addrStart.host());
-            addrDest = CIDRAddress(range.second);
-            list.add(addrDest.host());
+            list.add(CIDRAddress(range.first).host());
+            list.add(CIDRAddress(range.second).host());
         }
         scans.push_back(list);
     }
