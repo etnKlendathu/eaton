@@ -29,28 +29,28 @@ namespace fty::scan {
 
 void Dns::scanDns(FtyProto& proto, const std::string& address)
 {
-    sockaddr_in sa_in;
-    sockaddr*   sa  = reinterpret_cast<sockaddr*>(&sa_in);
+    sockaddr_in saIn;
+    sockaddr*   sa  = reinterpret_cast<sockaddr*>(&saIn);
     socklen_t   len = sizeof(sockaddr_in);
 
-    char dns_name[NI_MAXHOST];
+    char dnsName[NI_MAXHOST];
 
-    sa_in.sin_family = AF_INET;
-    if (!inet_aton(address.c_str(), &sa_in.sin_addr)) {
+    saIn.sin_family = AF_INET;
+    if (!inet_aton(address.c_str(), &saIn.sin_addr)) {
         return;
     }
 
-    if (!getnameinfo(sa, len, dns_name, sizeof(dns_name), nullptr, 0, NI_NAMEREQD)) {
-        proto.extInsert("dns.1", dns_name);
+    if (!getnameinfo(sa, len, dnsName, sizeof(dnsName), nullptr, 0, NI_NAMEREQD)) {
+        proto.extInsert("dns.1", dnsName);
         logDbg() << "Retrieved DNS information";
-        logDbg() << "FQDN =" << dns_name;
+        logDbg() << "FQDN =" << dnsName;
 
-        char* p = strchr(dns_name, '.');
+        char* p = strchr(dnsName, '.');
         if (p) {
             *p = 0;
         }
-        proto.extInsert("hostname", dns_name);
-        log_debug("Hostname = '%s'", dns_name);
+        proto.extInsert("hostname", dnsName);
+        logDbg() << "Hostname =" << dnsName;
     } else {
         logDbg() << "No host information retrieved from DNS";
     }
